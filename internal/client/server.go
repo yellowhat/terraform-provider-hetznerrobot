@@ -48,7 +48,11 @@ func (c *HetznerRobotClient) FetchAllServers() ([]Server, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("FetchAllServers: status %d, body %s", resp.StatusCode, string(bodyBytes))
+		return nil, fmt.Errorf(
+			"FetchAllServers: status %d, body %s",
+			resp.StatusCode,
+			string(bodyBytes),
+		)
 	}
 	var raw []struct {
 		Server Server `json:"server"`
@@ -72,7 +76,12 @@ func (c *HetznerRobotClient) FetchServerByID(id int) (Server, error) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
-		return Server{}, fmt.Errorf("FetchServerByID %d: status %d, body %s", id, resp.StatusCode, string(bodyBytes))
+		return Server{}, fmt.Errorf(
+			"FetchServerByID %d: status %d, body %s",
+			id,
+			resp.StatusCode,
+			string(bodyBytes),
+		)
 	}
 	var result struct {
 		Server Server `json:"server"`
@@ -119,11 +128,20 @@ func (c *HetznerRobotClient) FetchServersByIDs(ids []int) ([]Server, error) {
 	return servers, nil
 }
 
-func (c *HetznerRobotClient) RenameServer(ctx context.Context, serverID int, newName string) (*HetznerRenameResponse, error) {
+func (c *HetznerRobotClient) RenameServer(
+	ctx context.Context,
+	serverID int,
+	newName string,
+) (*HetznerRenameResponse, error) {
 	endpoint := fmt.Sprintf("/server/%d", serverID)
 	data := url.Values{}
 	data.Set("server_name", newName)
-	resp, err := c.DoRequest("POST", endpoint, strings.NewReader(data.Encode()), "application/x-www-form-urlencoded")
+	resp, err := c.DoRequest(
+		"POST",
+		endpoint,
+		strings.NewReader(data.Encode()),
+		"application/x-www-form-urlencoded",
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error renaming server %d to %s: %w", serverID, newName, err)
 	}
@@ -139,14 +157,24 @@ func (c *HetznerRobotClient) RenameServer(ctx context.Context, serverID int, new
 	return &renameResp, nil
 }
 
-func (c *HetznerRobotClient) EnableRescueMode(ctx context.Context, serverID int, os string, sshKeys []string) (*HetznerRescueResponse, error) {
+func (c *HetznerRobotClient) EnableRescueMode(
+	ctx context.Context,
+	serverID int,
+	os string,
+	sshKeys []string,
+) (*HetznerRescueResponse, error) {
 	endpoint := fmt.Sprintf("/boot/%d/rescue", serverID)
 	data := url.Values{}
 	data.Set("os", os)
 	for _, key := range sshKeys {
 		data.Add("authorized_key[]", key)
 	}
-	resp, err := c.DoRequest("POST", endpoint, strings.NewReader(data.Encode()), "application/x-www-form-urlencoded")
+	resp, err := c.DoRequest(
+		"POST",
+		endpoint,
+		strings.NewReader(data.Encode()),
+		"application/x-www-form-urlencoded",
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error enabling rescue mode for server %d: %w", serverID, err)
 	}
@@ -162,14 +190,28 @@ func (c *HetznerRobotClient) EnableRescueMode(ctx context.Context, serverID int,
 	return &rescueResp, nil
 }
 
-func (c *HetznerRobotClient) RebootServer(ctx context.Context, serverID int, resetType string) error {
+func (c *HetznerRobotClient) RebootServer(
+	ctx context.Context,
+	serverID int,
+	resetType string,
+) error {
 	endpoint := fmt.Sprintf("/reset/%d", serverID)
 	data := url.Values{}
 	data.Set("type", resetType)
 
-	resp, err := c.DoRequest("POST", endpoint, strings.NewReader(data.Encode()), "application/x-www-form-urlencoded")
+	resp, err := c.DoRequest(
+		"POST",
+		endpoint,
+		strings.NewReader(data.Encode()),
+		"application/x-www-form-urlencoded",
+	)
 	if err != nil {
-		return fmt.Errorf("error rebooting server %d with reset type %s: %w", serverID, resetType, err)
+		return fmt.Errorf(
+			"error rebooting server %d with reset type %s: %w",
+			serverID,
+			resetType,
+			err,
+		)
 	}
 	defer resp.Body.Close()
 
@@ -186,15 +228,29 @@ func (c *HetznerRobotClient) RebootServer(ctx context.Context, serverID int, res
 		powerData := url.Values{}
 		powerData.Set("action", "on")
 
-		powerResp, err := c.DoRequest("POST", endpoint, strings.NewReader(data.Encode()), "application/x-www-form-urlencoded")
+		powerResp, err := c.DoRequest(
+			"POST",
+			endpoint,
+			strings.NewReader(data.Encode()),
+			"application/x-www-form-urlencoded",
+		)
 		if err != nil {
-			return fmt.Errorf("error turning on server %d after %s reset: %w", serverID, resetType, err)
+			return fmt.Errorf(
+				"error turning on server %d after %s reset: %w",
+				serverID,
+				resetType,
+				err,
+			)
 		}
 		defer powerResp.Body.Close()
 
 		if powerResp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(powerResp.Body)
-			return fmt.Errorf("unexpected status code %d when turning on server, body: %s", powerResp.StatusCode, string(body))
+			return fmt.Errorf(
+				"unexpected status code %d when turning on server, body: %s",
+				powerResp.StatusCode,
+				string(body),
+			)
 		}
 
 		fmt.Printf("[DEBUG] Server %d successfully powered on\n", serverID)
