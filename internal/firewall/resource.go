@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
-
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
@@ -46,18 +45,48 @@ func Resource() *schema.Resource {
 				Required: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"name":      {Type: schema.TypeString, Optional: true, Description: "Name of the firewall rule."},
-						"dst_ip":    {Type: schema.TypeString, Optional: true, Description: "Destination IP address."},
-						"dst_port":  {Type: schema.TypeString, Optional: true, Description: "Destination port."},
-						"src_ip":    {Type: schema.TypeString, Optional: true, Description: "Source IP address."},
-						"src_port":  {Type: schema.TypeString, Optional: true, Description: "Source port."},
-						"protocol":  {Type: schema.TypeString, Optional: true, Description: "Protocol (e.g., tcp, udp)."},
-						"tcp_flags": {Type: schema.TypeString, Optional: true, Description: "TCP flags."},
+						"name": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Name of the firewall rule.",
+						},
+						"dst_ip": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Destination IP address.",
+						},
+						"dst_port": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Destination port.",
+						},
+						"src_ip": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Source IP address.",
+						},
+						"src_port": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Source port.",
+						},
+						"protocol": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Protocol (e.g., tcp, udp).",
+						},
+						"tcp_flags": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "TCP flags.",
+						},
 						"action": {
-							Type:             schema.TypeString,
-							Required:         true,
-							ValidateDiagFunc: validation.ToDiagFunc(validation.StringInSlice([]string{"accept", "discard"}, false)),
-							Description:      "Action to take (accept or discard).",
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateDiagFunc: validation.ToDiagFunc(
+								validation.StringInSlice([]string{"accept", "discard"}, false),
+							),
+							Description: "Action to take (accept or discard).",
 						},
 					},
 				},
@@ -96,7 +125,6 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		Status:                   status,
 		Rules:                    client.FirewallRules{Input: rules},
 	}, 20, 15*time.Second)
-
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -128,9 +156,9 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(err)
 	}
 
-	d.Set("active", firewall.Status == "active")
-	d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
-	d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
+	_ = d.Set("active", firewall.Status == "active")
+	_ = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
+	_ = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
 
 	return nil
 }
@@ -176,7 +204,6 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			},
 		},
 	}, 20, 15*time.Second)
-
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting firewall to allow all: %w", err))
 	}
@@ -185,7 +212,11 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	return nil
 }
 
-func resourceFirewallImportState(ctx context.Context, d *schema.ResourceData, meta any) ([]*schema.ResourceData, error) {
+func resourceFirewallImportState(
+	ctx context.Context,
+	d *schema.ResourceData,
+	meta any,
+) ([]*schema.ResourceData, error) {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return nil, fmt.Errorf("invalid client type")
@@ -207,11 +238,11 @@ func resourceFirewallImportState(ctx context.Context, d *schema.ResourceData, me
 		return nil, fmt.Errorf("could not find firewall for server ID %s: %w", serverID, err)
 	}
 
-	d.Set("active", firewall.Status == "active")
-	d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
-	d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
-	d.Set("server_id", serverID)
 	d.SetId(serverID)
+	_ = d.Set("active", firewall.Status == "active")
+	_ = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
+	_ = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
+	_ = d.Set("server_id", serverID)
 
 	return []*schema.ResourceData{d}, nil
 }

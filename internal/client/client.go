@@ -24,7 +24,11 @@ func NewHetznerRobotClient(config *ProviderConfig) *HetznerRobotClient {
 	}
 }
 
-func (c *HetznerRobotClient) DoRequest(method, path string, body io.Reader, contentType string) (*http.Response, error) {
+func (c *HetznerRobotClient) DoRequest(
+	method, path string,
+	body io.Reader,
+	contentType string,
+) (*http.Response, error) {
 	req, err := http.NewRequest(method, fmt.Sprintf("%s%s", c.Config.BaseURL, path), body)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)

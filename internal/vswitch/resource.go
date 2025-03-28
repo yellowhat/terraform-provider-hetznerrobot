@@ -11,7 +11,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
@@ -70,7 +69,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	if vlan, vlanProvided := d.GetOk("vlan"); vlanProvided {
 		chosenVLAN = vlan.(int)
-	} else if storedVLAN, vlanExists := d.GetOkExists("vlan"); vlanExists {
+	} else if storedVLAN, vlanExists := d.GetOk("vlan"); vlanExists {
 		chosenVLAN = storedVLAN.(int)
 	} else {
 		freeVLAN, err := pickRandomFreeVLAN(ctx, hClient)
@@ -130,14 +129,17 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 	var incidents []string
 	for _, server := range vsw.Servers {
 		if server.Status == "failed" {
-			message := fmt.Sprintf("Server %d failed to connect. Please check in the Hetzner web interface.", server.ServerNumber)
+			message := fmt.Sprintf(
+				"Server %d failed to connect. Please check in the Hetzner web interface.",
+				server.ServerNumber,
+			)
 			fmt.Println("[WARNING]", message)
 			incidents = append(incidents, message)
 		}
 	}
-	d.Set("incidents", incidents)
 
-	fmt.Printf("[INFO] Successfully read vSwitch ID: %s\n", id)
+	_ = d.Set("incidents", incidents)
+
 	return nil
 }
 
@@ -191,7 +193,9 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	if waitForReady {
 		if err := hClient.WaitForVSwitchReady(ctx, id, 20, 15*time.Second); err != nil {
-			return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after update: %w", err))
+			return diag.FromErr(
+				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
+			)
 		}
 	}
 

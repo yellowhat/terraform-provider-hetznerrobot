@@ -55,7 +55,12 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	return &fwResp.Firewall, nil
 }
 
-func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall Firewall, maxRetries int, waitTime time.Duration) error {
+func (c *HetznerRobotClient) SetFirewall(
+	ctx context.Context,
+	firewall Firewall,
+	maxRetries int,
+	waitTime time.Duration,
+) error {
 	path := fmt.Sprintf("/firewall/%s", firewall.IP)
 	whitelistHOS := "false"
 	if firewall.WhitelistHetznerServices {
@@ -92,7 +97,12 @@ func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall Firewall,
 		data.Set(fmt.Sprintf("rules[input][%d][action]", idx), rule.Action)
 	}
 
-	resp, err := c.DoRequest("POST", path, strings.NewReader(data.Encode()), "application/x-www-form-urlencoded")
+	resp, err := c.DoRequest(
+		"POST",
+		path,
+		strings.NewReader(data.Encode()),
+		"application/x-www-form-urlencoded",
+	)
 	if err != nil {
 		return fmt.Errorf("failed to set firewall: %w", err)
 	}
@@ -105,7 +115,12 @@ func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall Firewall,
 	return c.waitForFirewallActive(ctx, firewall.IP, maxRetries, waitTime)
 }
 
-func (c *HetznerRobotClient) waitForFirewallActive(ctx context.Context, ip string, maxRetries int, waitTime time.Duration) error {
+func (c *HetznerRobotClient) waitForFirewallActive(
+	ctx context.Context,
+	ip string,
+	maxRetries int,
+	waitTime time.Duration,
+) error {
 	for i := range maxRetries {
 		firewall, err := c.GetFirewall(ctx, ip)
 		if err != nil {

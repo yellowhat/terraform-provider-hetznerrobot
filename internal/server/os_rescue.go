@@ -9,7 +9,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
@@ -65,7 +64,11 @@ func ResourceOSRescue() *schema.Resource {
 	}
 }
 
-func resourceOSRescueCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceOSRescueCreate(
+	ctx context.Context,
+	d *schema.ResourceData,
+	meta any,
+) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -93,13 +96,17 @@ func resourceOSRescueCreate(ctx context.Context, d *schema.ResourceData, meta an
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to enable rescue mode for server %d: %v", serverID, err))
+		return diag.FromErr(
+			fmt.Errorf("failed to enable rescue mode for server %d: %v", serverID, err),
+		)
 	}
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
 	if err := hClient.RebootServer(ctx, serverID, "hw"); err != nil {
-		return diag.FromErr(fmt.Errorf("failed to reboot server %d with power reset: %v", serverID, err))
+		return diag.FromErr(
+			fmt.Errorf("failed to reboot server %d with power reset: %v", serverID, err),
+		)
 	}
 
 	fmt.Printf("Connecting to server %s with password: %s\n", ip, pass)
@@ -109,12 +116,17 @@ func resourceOSRescueCreate(ctx context.Context, d *schema.ResourceData, meta an
 	}
 
 	d.SetId(serverNumber)
-	d.Set("ip", ip)
-	d.Set("ssh_password", pass)
+	_ = d.Set("ip", ip)
+	_ = d.Set("ssh_password", pass)
+
 	return nil
 }
 
-func resourceOSRescueUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceOSRescueUpdate(
+	ctx context.Context,
+	d *schema.ResourceData,
+	meta any,
+) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -148,12 +160,16 @@ func waitForSSH(ip string, timeout time.Duration, interval time.Duration) error 
 	for time.Now().Before(deadline) {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:22", ip), 5*time.Second)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 			fmt.Printf("[INFO] SSH is available on the server %s\n", ip)
 			return nil
 		}
 
-		fmt.Printf("[WARN] Waiting for SSH on %s... Retrying in %v seconds\n", ip, interval.Seconds())
+		fmt.Printf(
+			"[WARN] Waiting for SSH on %s... Retrying in %v seconds\n",
+			ip,
+			interval.Seconds(),
+		)
 		time.Sleep(interval)
 	}
 

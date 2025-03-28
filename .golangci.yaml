@@ -1,0 +1,18 @@
+---
+version: "2"
+
+linters:
+  exclusions:
+    rules:
+      # https://github.com/kisielk/errcheck/issues/101
+      - source: "^\\s*defer\\s+"
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines

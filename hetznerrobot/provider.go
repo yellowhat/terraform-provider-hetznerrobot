@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
@@ -29,9 +28,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("HETZNERROBOT_PASSWORD", nil),
 			},
 			"url": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HETZNERROBOT_URL", "https://robot-ws.your-server.de"),
+				Type:     schema.TypeString,
+				Optional: true,
+				DefaultFunc: schema.EnvDefaultFunc(
+					"HETZNERROBOT_URL",
+					"https://robot-ws.your-server.de",
+				),
 				Description: "Base URL for the Hetzner Robot API.",
 			},
 		},
