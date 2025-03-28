@@ -87,11 +87,11 @@ func resourceFirewallCreate(ctx context.Context, d *schema.ResourceData, meta an
 
 	rules := buildFirewallRules(d.Get("rule").([]any))
 
-	err = hClient.SetFirewall(ctx, client.HetznerRobotFirewall{
+	err = hClient.SetFirewall(ctx, client.Firewall{
 		IP:                       server.IP,
 		WhitelistHetznerServices: d.Get("whitelist_hos").(bool),
 		Status:                   status,
-		Rules:                    client.HetznerRobotFirewallRules{Input: rules},
+		Rules:                    client.FirewallRules{Input: rules},
 	}, 20, 15*time.Second)
 
 	if err != nil {
@@ -154,12 +154,12 @@ func resourceFirewallDelete(ctx context.Context, d *schema.ResourceData, meta an
 	}
 
 	// Set a rule to allow all traffic
-	err = hClient.SetFirewall(ctx, client.HetznerRobotFirewall{
+	err = hClient.SetFirewall(ctx, client.Firewall{
 		IP:                       server.IP,
 		WhitelistHetznerServices: false,
 		Status:                   "active",
-		Rules: client.HetznerRobotFirewallRules{
-			Input: []client.HetznerRobotFirewallRule{
+		Rules: client.FirewallRules{
+			Input: []client.FirewallRule{
 				{
 					Name:     "Allow all",
 					Protocol: "",
@@ -214,11 +214,11 @@ func resourceFirewallImportState(ctx context.Context, d *schema.ResourceData, me
 }
 
 // Helper functions
-func buildFirewallRules(ruleList []any) []client.HetznerRobotFirewallRule {
-	var rules []client.HetznerRobotFirewallRule
+func buildFirewallRules(ruleList []any) []client.FirewallRule {
+	var rules []client.FirewallRule
 	for _, ruleMap := range ruleList {
 		ruleProps := ruleMap.(map[string]any)
-		rules = append(rules, client.HetznerRobotFirewallRule{
+		rules = append(rules, client.FirewallRule{
 			Name:     ruleProps["name"].(string),
 			DstIP:    ruleProps["dst_ip"].(string),
 			DstPort:  ruleProps["dst_port"].(string),
@@ -232,7 +232,7 @@ func buildFirewallRules(ruleList []any) []client.HetznerRobotFirewallRule {
 	return rules
 }
 
-func flattenFirewallRules(rules []client.HetznerRobotFirewallRule) []map[string]any {
+func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
 	var result []map[string]any
 	for _, rule := range rules {
 		result = append(result, map[string]any{

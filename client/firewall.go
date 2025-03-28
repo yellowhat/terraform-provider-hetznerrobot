@@ -9,18 +9,18 @@ import (
 	"time"
 )
 
-type HetznerRobotFirewall struct {
-	IP                       string                    `json:"ip"`
-	WhitelistHetznerServices bool                      `json:"whitelist_hos"`
-	Status                   string                    `json:"status"`
-	Rules                    HetznerRobotFirewallRules `json:"rules"`
+type Firewall struct {
+	IP                       string        `json:"ip"`
+	WhitelistHetznerServices bool          `json:"whitelist_hos"`
+	Status                   string        `json:"status"`
+	Rules                    FirewallRules `json:"rules"`
 }
 
-type HetznerRobotFirewallRules struct {
-	Input []HetznerRobotFirewallRule `json:"input"`
+type FirewallRules struct {
+	Input []FirewallRule `json:"input"`
 }
 
-type HetznerRobotFirewallRule struct {
+type FirewallRule struct {
 	Name     string `json:"name,omitempty"`
 	SrcIP    string `json:"src_ip,omitempty"`
 	SrcPort  string `json:"src_port,omitempty"`
@@ -31,11 +31,11 @@ type HetznerRobotFirewallRule struct {
 	Action   string `json:"action"`
 }
 
-type HetznerRobotFirewallResponse struct {
-	Firewall HetznerRobotFirewall `json:"firewall"`
+type FirewallResponse struct {
+	Firewall Firewall `json:"firewall"`
 }
 
-func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*HetznerRobotFirewall, error) {
+func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firewall, error) {
 	path := fmt.Sprintf("/firewall/%s", ip)
 	resp, err := c.DoRequest("GET", path, nil, "")
 	if err != nil {
@@ -47,7 +47,7 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Hetzn
 		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
 	}
 
-	var fwResp HetznerRobotFirewallResponse
+	var fwResp FirewallResponse
 	if err := json.NewDecoder(resp.Body).Decode(&fwResp); err != nil {
 		return nil, fmt.Errorf("failed to parse firewall response: %w", err)
 	}
@@ -55,7 +55,7 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Hetzn
 	return &fwResp.Firewall, nil
 }
 
-func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall HetznerRobotFirewall, maxRetries int, waitTime time.Duration) error {
+func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall Firewall, maxRetries int, waitTime time.Duration) error {
 	path := fmt.Sprintf("/firewall/%s", firewall.IP)
 	whitelistHOS := "false"
 	if firewall.WhitelistHetznerServices {
