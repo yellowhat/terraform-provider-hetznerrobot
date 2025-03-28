@@ -260,7 +260,7 @@ func (c *HetznerRobotClient) SetVSwitchCancellation(ctx context.Context, id, can
 }
 
 func (c *HetznerRobotClient) WaitForVSwitchReady(ctx context.Context, id string, maxRetries int, waitTime time.Duration) error {
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		vsw, err := c.FetchVSwitchByIDWithContext(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)

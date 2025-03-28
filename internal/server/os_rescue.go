@@ -1,4 +1,4 @@
-package resources
+package server
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"github.com/yellowhat/terraform-provider-hetznerrobot/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
 type ServerInput struct {

@@ -4,16 +4,20 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
 )
 
+type ProviderConfig struct {
+	Username string
+	Password string
+	BaseURL  string
+}
+
 type HetznerRobotClient struct {
-	Config *shared.ProviderConfig
+	Config *ProviderConfig
 	Client *http.Client
 }
 
-func NewHetznerRobotClient(config *shared.ProviderConfig) *HetznerRobotClient {
+func NewHetznerRobotClient(config *ProviderConfig) *HetznerRobotClient {
 	return &HetznerRobotClient{
 		Config: config,
 		Client: &http.Client{},

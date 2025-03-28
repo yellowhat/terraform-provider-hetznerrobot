@@ -1,4 +1,4 @@
-package provider
+package hetznerrobot
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"github.com/yellowhat/terraform-provider-hetznerrobot/client"
-	"github.com/yellowhat/terraform-provider-hetznerrobot/data_sources"
-	"github.com/yellowhat/terraform-provider-hetznerrobot/resources"
-	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
 func Provider() *schema.Provider {
@@ -36,13 +36,13 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"hetznerrobot_firewall":  resources.ResourceFirewall(),
-			"hetznerrobot_os_rescue": resources.ResourceOSRescue(),
-			"hetznerrobot_vswitch":   resources.ResourceVSwitch(),
+			"hetznerrobot_firewall":  firewall.ResourceFirewall(),
+			"hetznerrobot_os_rescue": server.ResourceOSRescue(),
+			"hetznerrobot_vswitch":   vswitch.ResourceVSwitch(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"hetznerrobot_server":  data_sources.DataSourceServers(),
-			"hetznerrobot_vswitch": data_sources.DataSourceVSwitches(),
+			"hetznerrobot_server":  server.DataSourceServers(),
+			"hetznerrobot_vswitch": vswitch.DataSourceVSwitches(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -61,7 +61,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (any, diag.D
 		})
 		return nil, diags
 	}
-	config := &shared.ProviderConfig{
+	config := &client.ProviderConfig{
 		Username: username,
 		Password: password,
 		BaseURL:  url,
