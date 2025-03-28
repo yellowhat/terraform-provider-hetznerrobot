@@ -15,12 +15,15 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-func ResourceVSwitch() *schema.Resource {
+// ResourceType is the type name of the Hetzner Robo vSwitch resource.
+const ResourceType = "hetznerrobot_vswitch"
+
+func Resource() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceVSwitchCreate,
-		ReadContext:   resourceVSwitchRead,
-		UpdateContext: resourceVSwitchUpdate,
-		DeleteContext: resourceVSwitchDelete,
+		CreateContext: resourceCreate,
+		ReadContext:   resourceRead,
+		UpdateContext: resourceUpdate,
+		DeleteContext: resourceDelete,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -55,7 +58,7 @@ func ResourceVSwitch() *schema.Resource {
 	}
 }
 
-func resourceVSwitchCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -95,10 +98,10 @@ func resourceVSwitchCreate(ctx context.Context, d *schema.ResourceData, meta any
 
 	d.SetId(strconv.Itoa(vsw.ID))
 
-	return resourceVSwitchRead(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func resourceVSwitchRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -138,7 +141,7 @@ func resourceVSwitchRead(ctx context.Context, d *schema.ResourceData, meta any) 
 	return nil
 }
 
-func resourceVSwitchUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -192,10 +195,10 @@ func resourceVSwitchUpdate(ctx context.Context, d *schema.ResourceData, meta any
 		}
 	}
 
-	return resourceVSwitchRead(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func resourceVSwitchDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")

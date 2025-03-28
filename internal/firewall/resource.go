@@ -13,12 +13,15 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-func ResourceFirewall() *schema.Resource {
+// ResourceType is the type name of the Hetzner Robot Firewall resource.
+const ResourceType = "hetznerrobot_firewall"
+
+func Resource() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceFirewallCreate,
-		ReadContext:   resourceFirewallRead,
-		UpdateContext: resourceFirewallUpdate,
-		DeleteContext: resourceFirewallDelete,
+		CreateContext: resourceCreate,
+		ReadContext:   resourceRead,
+		UpdateContext: resourceUpdate,
+		DeleteContext: resourceDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: resourceFirewallImportState,
 		},
@@ -63,7 +66,7 @@ func ResourceFirewall() *schema.Resource {
 	}
 }
 
-func resourceFirewallCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -99,10 +102,10 @@ func resourceFirewallCreate(ctx context.Context, d *schema.ResourceData, meta an
 	}
 
 	d.SetId(serverID)
-	return resourceFirewallRead(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func resourceFirewallRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -132,11 +135,11 @@ func resourceFirewallRead(ctx context.Context, d *schema.ResourceData, meta any)
 	return nil
 }
 
-func resourceFirewallUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
-	return resourceFirewallCreate(ctx, d, meta)
+func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+	return resourceCreate(ctx, d, meta)
 }
 
-func resourceFirewallDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
