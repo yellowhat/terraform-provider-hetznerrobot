@@ -12,9 +12,12 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-func DataSourceVSwitches() *schema.Resource {
+// DataSourceType is the type name of the Hetzner Robot vSwitch resource.
+const DataSourceType = "hetznerrobot_vswitch"
+
+func DataSource() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceVSwitchesRead,
+		ReadContext: dataSourceRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -41,7 +44,7 @@ func DataSourceVSwitches() *schema.Resource {
 	}
 }
 
-func dataSourceVSwitchesRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")

@@ -13,6 +13,9 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
+// ResourceType is the type name of the Hetzner Robot OS Rescue resource.
+const ResourceOSRescueType = "hetznerrobot_os_rescue"
+
 type ServerInput struct {
 	ID   string
 	Name string

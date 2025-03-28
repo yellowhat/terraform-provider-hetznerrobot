@@ -11,6 +11,9 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
+// DataSourceType is the type name of the Hetzner Robot Server resource.
+const DataSourceType = "hetznerrobot_server"
+
 func DataSourceServers() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceServersRead,

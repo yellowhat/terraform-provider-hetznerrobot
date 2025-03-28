@@ -36,13 +36,13 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"hetznerrobot_firewall":  firewall.ResourceFirewall(),
+			"hetznerrobot_firewall":  firewall.Resource(),
 			"hetznerrobot_os_rescue": server.ResourceOSRescue(),
-			"hetznerrobot_vswitch":   vswitch.ResourceVSwitch(),
+			"hetznerrobot_vswitch":   vswitch.Resource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"hetznerrobot_server":  server.DataSourceServers(),
-			"hetznerrobot_vswitch": vswitch.DataSourceVSwitches(),
+			"hetznerrobot_vswitch": vswitch.DataSource(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
