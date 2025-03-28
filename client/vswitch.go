@@ -14,6 +14,36 @@ import (
 	"time"
 )
 
+type VSwitch struct {
+	ID        int               `json:"id"`
+	Name      string            `json:"name"`
+	VLAN      int               `json:"vlan"`
+	Cancelled bool              `json:"cancelled"`
+	Servers   []VSwitchServer   `json:"server"`
+	Subnets   []VSwitchSubnet   `json:"subnets"`
+	CloudNets []VSwitchCloudNet `json:"cloud_networks"`
+}
+
+type VSwitchServer struct {
+	ServerNumber  int    `json:"server_number,omitempty"`
+	ServerIP      string `json:"server_ip,omitempty"`
+	ServerIPv6Net string `json:"server_ipv6_net,omitempty"`
+	Status        string `json:"status,omitempty"`
+}
+
+type VSwitchSubnet struct {
+	IP      string `json:"ip"`
+	Mask    int    `json:"mask"`
+	Gateway string `json:"gateway"`
+}
+
+type VSwitchCloudNet struct {
+	ID      int    `json:"id"`
+	IP      string `json:"ip"`
+	Mask    int    `json:"mask"`
+	Gateway string `json:"gateway"`
+}
+
 func (c *HetznerRobotClient) FetchVSwitchByIDWithContext(ctx context.Context, id string) (*VSwitch, error) {
 	resp, err := c.DoRequest("GET", fmt.Sprintf("/vswitch/%s", id), nil, "")
 	if err != nil {

@@ -8,6 +8,11 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
 )
 
+type HetznerRobotClient struct {
+	Config *shared.ProviderConfig
+	Client *http.Client
+}
+
 func NewHetznerRobotClient(config *shared.ProviderConfig) *HetznerRobotClient {
 	return &HetznerRobotClient{
 		Config: config,

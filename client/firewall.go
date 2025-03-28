@@ -9,6 +9,32 @@ import (
 	"time"
 )
 
+type HetznerRobotFirewall struct {
+	IP                       string                    `json:"ip"`
+	WhitelistHetznerServices bool                      `json:"whitelist_hos"`
+	Status                   string                    `json:"status"`
+	Rules                    HetznerRobotFirewallRules `json:"rules"`
+}
+
+type HetznerRobotFirewallRules struct {
+	Input []HetznerRobotFirewallRule `json:"input"`
+}
+
+type HetznerRobotFirewallRule struct {
+	Name     string `json:"name,omitempty"`
+	SrcIP    string `json:"src_ip,omitempty"`
+	SrcPort  string `json:"src_port,omitempty"`
+	DstIP    string `json:"dst_ip,omitempty"`
+	DstPort  string `json:"dst_port,omitempty"`
+	Protocol string `json:"protocol,omitempty"`
+	TCPFlags string `json:"tcp_flags,omitempty"`
+	Action   string `json:"action"`
+}
+
+type HetznerRobotFirewallResponse struct {
+	Firewall HetznerRobotFirewall `json:"firewall"`
+}
+
 func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*HetznerRobotFirewall, error) {
 	path := fmt.Sprintf("/firewall/%s", ip)
 	resp, err := c.DoRequest("GET", path, nil, "")
@@ -80,7 +106,7 @@ func (c *HetznerRobotClient) SetFirewall(ctx context.Context, firewall HetznerRo
 }
 
 func (c *HetznerRobotClient) waitForFirewallActive(ctx context.Context, ip string, maxRetries int, waitTime time.Duration) error {
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		firewall, err := c.GetFirewall(ctx, ip)
 		if err != nil {
 			return fmt.Errorf("error checking firewall status: %w", err)
