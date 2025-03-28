@@ -3,7 +3,7 @@ package client
 import (
 	"net/http"
 
-	"hetznerrobot-provider/shared"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
 )
 
 type NotFoundError struct {

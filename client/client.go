@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"hetznerrobot-provider/shared"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
 )
 
 func NewHetznerRobotClient(config *shared.ProviderConfig) *HetznerRobotClient {

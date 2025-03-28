@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 
-	"hetznerrobot-provider/provider"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/provider"
 )
 
 func main() {

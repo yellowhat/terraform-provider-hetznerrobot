@@ -1,4 +1,4 @@
-module hetznerrobot-provider
+module github.com/yellowhat/terraform-provider-hetznerrobot
 
 go 1.23.2
 

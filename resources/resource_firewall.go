@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 
-	"hetznerrobot-provider/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/client"
 )
 
 func ResourceFirewall() *schema.Resource {

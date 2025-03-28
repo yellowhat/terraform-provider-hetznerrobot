@@ -6,10 +6,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"hetznerrobot-provider/client"
-	"hetznerrobot-provider/data_sources"
-	"hetznerrobot-provider/resources"
-	"hetznerrobot-provider/shared"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/data_sources"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/resources"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/shared"
 )
 
 func Provider() *schema.Provider {
