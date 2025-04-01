@@ -2,8 +2,9 @@ package vswitch
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
@@ -271,10 +272,12 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 		return 0, fmt.Errorf("no free VLAN in [4000..4091], all are taken")
 	}
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	idx := r.Intn(len(free))
+	idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(free))))
+	if err != nil {
+		return 0, fmt.Errorf("generating a random index: %w", err)
+	}
 
-	return free[idx], nil
+	return free[idx.Int64()], nil
 }
 
 func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {
