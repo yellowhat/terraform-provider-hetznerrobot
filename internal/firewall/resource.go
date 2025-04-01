@@ -15,7 +15,7 @@ import (
 const (
 	// ResourceType is the type name of the Hetzner Robot Firewall resource.
 	ResourceType = "hetznerrobot_firewall"
-	statusTrue = "active"
+	statusTrue   = "active"
 )
 
 func Resource() *schema.Resource {
@@ -252,7 +252,7 @@ func resourceFirewallImportState(
 
 // Helper functions
 func buildFirewallRules(ruleList []any) []client.FirewallRule {
-	var rules = make([]client.FirewallRule, 0, len(ruleList))
+	rules := make([]client.FirewallRule, 0, len(ruleList))
 	for _, ruleMap := range ruleList {
 		ruleProps := ruleMap.(map[string]any)
 		rules = append(rules, client.FirewallRule{
@@ -270,7 +270,7 @@ func buildFirewallRules(ruleList []any) []client.FirewallRule {
 }
 
 func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
-	var result = make([]map[string]any, 0, len(rules))
+	result := make([]map[string]any, 0, len(rules))
 	for _, rule := range rules {
 		result = append(result, map[string]any{
 			"name":      rule.Name,
