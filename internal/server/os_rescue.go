@@ -79,7 +79,7 @@ func resourceOSRescueCreate(
 	rescueOS := d.Get("rescue_os").(string)
 	sshKeysRaw := d.Get("ssh_keys").([]any)
 
-	sshKeys := make([]string, 0 ,len(sshKeysRaw))
+	sshKeys := make([]string, 0, len(sshKeysRaw))
 	for _, key := range sshKeysRaw {
 		sshKeys = append(sshKeys, key.(string))
 	}
