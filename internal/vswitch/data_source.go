@@ -50,7 +50,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	idsInterface := d.Get("ids").([]any)
-	var ids []string
+	var ids = make([]string, 0, len(idsInterface))
 	for _, id := range idsInterface {
 		ids = append(ids, id.(string))
 	}

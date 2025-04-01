@@ -244,9 +244,8 @@ func (c *HetznerRobotClient) DeleteVSwitch(
 	if err != nil {
 		return fmt.Errorf("error deleting VSwitch: %w", err)
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf(
@@ -276,9 +275,8 @@ func (c *HetznerRobotClient) AddVSwitchServers(
 	if err != nil {
 		return fmt.Errorf("error adding servers to VSwitch: %w", err)
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(resp.Body)
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf(

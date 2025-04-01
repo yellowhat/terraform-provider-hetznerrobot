@@ -12,8 +12,11 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// ResourceType is the type name of the Hetzner Robot Firewall resource.
-const ResourceType = "hetznerrobot_firewall"
+const (
+	// ResourceType is the type name of the Hetzner Robot Firewall resource.
+	ResourceType = "hetznerrobot_firewall"
+	statusTrue = "active"
+)
 
 func Resource() *schema.Resource {
 	return &schema.Resource{
@@ -114,7 +117,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	status := "disabled"
 	if d.Get("active").(bool) {
-		status = "active"
+		status = statusTrue
 	}
 
 	rules := buildFirewallRules(d.Get("rule").([]any))
@@ -156,7 +159,7 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("active", firewall.Status == "active")
+	_ = d.Set("active", firewall.Status == statusTrue)
 	_ = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
 	_ = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
 
@@ -249,7 +252,7 @@ func resourceFirewallImportState(
 
 // Helper functions
 func buildFirewallRules(ruleList []any) []client.FirewallRule {
-	var rules []client.FirewallRule
+	var rules = make([]client.FirewallRule, 0, len(ruleList))
 	for _, ruleMap := range ruleList {
 		ruleProps := ruleMap.(map[string]any)
 		rules = append(rules, client.FirewallRule{
@@ -267,7 +270,7 @@ func buildFirewallRules(ruleList []any) []client.FirewallRule {
 }
 
 func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
-	var result []map[string]any
+	var result = make([]map[string]any, 0, len(rules))
 	for _, rule := range rules {
 		result = append(result, map[string]any{
 			"name":      rule.Name,
