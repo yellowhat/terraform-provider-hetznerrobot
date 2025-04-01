@@ -79,25 +79,25 @@ func resourceOSRescueCreate(
 	rescueOS := d.Get("rescue_os").(string)
 	sshKeysRaw := d.Get("ssh_keys").([]any)
 
-	var sshKeys []string
+	sshKeys := make([]string, 0, len(sshKeysRaw))
 	for _, key := range sshKeysRaw {
 		sshKeys = append(sshKeys, key.(string))
 	}
 
 	serverID, err := strconv.Atoi(serverNumber)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %v", serverNumber, err))
+		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
 	}
 
 	_, err = hClient.RenameServer(ctx, serverID, serverName)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to rename server %d: %v", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
 	}
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
 		return diag.FromErr(
-			fmt.Errorf("failed to enable rescue mode for server %d: %v", serverID, err),
+			fmt.Errorf("failed to enable rescue mode for server %d: %w", serverID, err),
 		)
 	}
 	ip := rescueResp.Rescue.ServerIP
@@ -105,14 +105,14 @@ func resourceOSRescueCreate(
 
 	if err := hClient.RebootServer(ctx, serverID, "hw"); err != nil {
 		return diag.FromErr(
-			fmt.Errorf("failed to reboot server %d with power reset: %v", serverID, err),
+			fmt.Errorf("failed to reboot server %d with power reset: %w", serverID, err),
 		)
 	}
 
 	fmt.Printf("Connecting to server %s with password: %s\n", ip, pass)
 
 	if err := waitForSSH(ip, 3*time.Minute, 10*time.Second); err != nil {
-		return diag.FromErr(fmt.Errorf("SSH not available on server %d: %v", serverID, err))
+		return diag.FromErr(fmt.Errorf("SSH not available on server %d: %w", serverID, err))
 	}
 
 	d.SetId(serverNumber)
@@ -137,18 +137,18 @@ func resourceOSRescueUpdate(
 
 	serverID, err := strconv.Atoi(serverNumber)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %v", serverNumber, err))
+		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
 	}
 
 	serverInfo, err := hClient.FetchServerByID(serverID)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to fetch server %d info: %v", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to fetch server %d info: %w", serverID, err))
 	}
 
 	if serverName != serverInfo.ServerName {
 		_, err := hClient.RenameServer(ctx, serverID, serverName)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to rename server %d: %v", serverID, err))
+			return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
 		}
 	}
 

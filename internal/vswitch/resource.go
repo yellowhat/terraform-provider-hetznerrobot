@@ -227,7 +227,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 // helpers
 func parseServerIDs(servers []any) []int {
-	var result []int
+	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.(int))
 	}
@@ -235,7 +235,7 @@ func parseServerIDs(servers []any) []int {
 }
 
 func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
-	var servers []client.VSwitchServer
+	servers := make([]client.VSwitchServer, 0, len(serverIDs))
 	for _, id := range serverIDs {
 		servers = append(servers, client.VSwitchServer{ServerNumber: id})
 	}
@@ -243,7 +243,7 @@ func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
 }
 
 func flattenServers(servers []client.VSwitchServer) []int {
-	var result []int
+	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.ServerNumber)
 	}
