@@ -51,7 +51,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	rawIDs := d.Get("ids").([]any)
-	var ids = make([]int, 0, len(rawIDs))
+	ids := make([]int, 0, len(rawIDs))
 	for _, v := range rawIDs {
 		ids = append(ids, v.(int))
 	}
