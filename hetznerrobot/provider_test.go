@@ -27,8 +27,8 @@ func TestProvider_Resources(t *testing.T) {
 	resources := provider.Resources()
 	assert.Len(t, resources, len(expectedResources))
 
-	for _, datasource := range resources {
-		assert.Contains(t, expectedResources, datasource.Name)
+	for _, resource := range resources {
+		assert.Contains(t, expectedResources, resource.Name)
 	}
 }
 

@@ -17,7 +17,7 @@ type HetznerRobotClient struct {
 	Client *http.Client
 }
 
-func NewHetznerRobotClient(config *ProviderConfig) *HetznerRobotClient {
+func New(config *ProviderConfig) *HetznerRobotClient {
 	return &HetznerRobotClient{
 		Config: config,
 		Client: &http.Client{},

@@ -68,6 +68,6 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (any, diag.D
 		Password: password,
 		BaseURL:  url,
 	}
-	client := client.NewHetznerRobotClient(config)
+	client := client.New(config)
 	return client, diags
 }
