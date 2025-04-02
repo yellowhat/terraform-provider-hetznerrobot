@@ -109,7 +109,7 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 
 	id := d.Id()
 
-	vsw, err := hClient.FetchVSwitchByIDWithContext(ctx, id)
+	vsw, err := hClient.FetchVSwitchByID(ctx, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			fmt.Printf("vSwitch with ID %s not found, marking for recreation\n", id)

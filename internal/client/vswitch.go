@@ -44,7 +44,7 @@ type VSwitchCloudNet struct {
 	Gateway string `json:"gateway"`
 }
 
-func (c *HetznerRobotClient) FetchVSwitchByIDWithContext(
+func (c *HetznerRobotClient) FetchVSwitchByID(
 	ctx context.Context,
 	id string,
 ) (*VSwitch, error) {
@@ -88,7 +88,7 @@ func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			vswitch, err := c.FetchVSwitchByIDWithContext(ctx, vswitchID)
+			vswitch, err := c.FetchVSwitchByID(ctx, vswitchID)
 			if err != nil {
 				mu.Lock()
 				errs = append(errs, err)
@@ -344,7 +344,7 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 	waitTime time.Duration,
 ) error {
 	for i := range maxRetries {
-		vsw, err := c.FetchVSwitchByIDWithContext(ctx, id)
+		vsw, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)
 		}
