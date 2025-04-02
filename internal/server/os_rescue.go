@@ -89,11 +89,6 @@ func resourceOSRescueCreate(
 		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
 	}
 
-	_, err = hClient.RenameServer(ctx, serverID, serverName)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
-	}
-
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
 		return diag.FromErr(
@@ -109,10 +104,13 @@ func resourceOSRescueCreate(
 		)
 	}
 
-	fmt.Printf("Connecting to server %s with password: %s\n", ip, pass)
-
 	if err := waitForSSH(ip, 3*time.Minute, 10*time.Second); err != nil {
 		return diag.FromErr(fmt.Errorf("SSH not available on server %d: %w", serverID, err))
+	}
+
+	_, err = hClient.RenameServer(ctx, serverID, serverName)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
 	}
 
 	d.SetId(serverNumber)
