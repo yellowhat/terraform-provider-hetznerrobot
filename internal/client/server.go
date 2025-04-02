@@ -103,9 +103,9 @@ func (c *HetznerRobotClient) FetchServerByID(id int) (Server, error) {
 
 func (c *HetznerRobotClient) FetchServersByIDs(ids []int) ([]Server, error) {
 	var (
-		servers []Server
-		mu      sync.Mutex
 		wg      sync.WaitGroup
+		mu      sync.Mutex
+		servers []Server
 		errs    []error
 	)
 	sem := make(chan struct{}, 10)
