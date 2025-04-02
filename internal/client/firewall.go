@@ -68,13 +68,9 @@ func (c *HetznerRobotClient) SetFirewall(
 	waitTime time.Duration,
 ) error {
 	path := fmt.Sprintf("/firewall/%s", firewall.IP)
-	whitelistHOS := "false"
-	if firewall.WhitelistHetznerServices {
-		whitelistHOS = "true"
-	}
 
 	data := url.Values{}
-	data.Set("whitelist_hos", whitelistHOS)
+	data.Set("whitelist_hos", fmt.Sprintf("%t", firewall.WhitelistHetznerServices))
 	data.Set("status", firewall.Status)
 
 	for idx, rule := range firewall.Rules.Input {
