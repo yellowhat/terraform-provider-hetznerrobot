@@ -73,30 +73,30 @@ func (c *HetznerRobotClient) SetFirewall(
 	data.Set("whitelist_hos", fmt.Sprintf("%t", firewall.WhitelistHetznerServices))
 	data.Set("status", firewall.Status)
 
-	for idx, rule := range firewall.Rules.Input {
-		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), "ipv4")
+	for index, rule := range firewall.Rules.Input {
+		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", index), "ipv4")
 		if rule.Name != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][name]", idx), rule.Name)
+			data.Set(fmt.Sprintf("rules[input][%d][name]", index), rule.Name)
 		}
 		if rule.SrcIP != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][src_ip]", idx), rule.SrcIP)
+			data.Set(fmt.Sprintf("rules[input][%d][src_ip]", index), rule.SrcIP)
 		}
 		if rule.SrcPort != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][src_port]", idx), rule.SrcPort)
+			data.Set(fmt.Sprintf("rules[input][%d][src_port]", index), rule.SrcPort)
 		}
 		if rule.DstIP != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_ip]", idx), rule.DstIP)
+			data.Set(fmt.Sprintf("rules[input][%d][dst_ip]", index), rule.DstIP)
 		}
 		if rule.DstPort != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_port]", idx), rule.DstPort)
+			data.Set(fmt.Sprintf("rules[input][%d][dst_port]", index), rule.DstPort)
 		}
 		if rule.Protocol != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][protocol]", idx), rule.Protocol)
+			data.Set(fmt.Sprintf("rules[input][%d][protocol]", index), rule.Protocol)
 		}
 		if rule.TCPFlags != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][tcp_flags]", idx), rule.TCPFlags)
+			data.Set(fmt.Sprintf("rules[input][%d][tcp_flags]", index), rule.TCPFlags)
 		}
-		data.Set(fmt.Sprintf("rules[input][%d][action]", idx), rule.Action)
+		data.Set(fmt.Sprintf("rules[input][%d][action]", index), rule.Action)
 	}
 
 	resp, err := c.DoRequest(
