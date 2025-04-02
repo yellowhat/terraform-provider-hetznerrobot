@@ -332,34 +332,6 @@ func (c *HetznerRobotClient) RemoveVSwitchServers(
 	return nil
 }
 
-func (c *HetznerRobotClient) SetVSwitchCancellation(
-	ctx context.Context,
-	id, cancellationDate string,
-) error {
-	data := url.Values{}
-	data.Set("cancellation_date", cancellationDate)
-	resp, err := c.DoRequest(
-		"POST",
-		fmt.Sprintf("/vswitch/%s/cancel", id),
-		strings.NewReader(data.Encode()),
-		"application/x-www-form-urlencoded",
-	)
-	if err != nil {
-		return fmt.Errorf("error setting cancellation date: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("unable to read response body: %w", err)
-		}
-		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, data)
-	}
-
-	return nil
-}
-
 func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
 	id string,
