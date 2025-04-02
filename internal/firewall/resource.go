@@ -53,15 +53,10 @@ func Resource() *schema.Resource {
 							Optional:    true,
 							Description: "Name of the firewall rule.",
 						},
-						"dst_ip": {
+						"ip_version": {
 							Type:        schema.TypeString,
 							Optional:    true,
-							Description: "Destination IP address.",
-						},
-						"dst_port": {
-							Type:        schema.TypeString,
-							Optional:    true,
-							Description: "Destination port.",
+							Description: "IP protocol (e.g. ipv4, ipv6, *).",
 						},
 						"src_ip": {
 							Type:        schema.TypeString,
@@ -72,6 +67,16 @@ func Resource() *schema.Resource {
 							Type:        schema.TypeString,
 							Optional:    true,
 							Description: "Source port.",
+						},
+						"dst_ip": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Destination IP address.",
+						},
+						"dst_port": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							Description: "Destination port.",
 						},
 						"protocol": {
 							Type:        schema.TypeString,
@@ -196,11 +201,12 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			Input: []client.FirewallRule{
 				{
 					Name:     "Allow all",
-					Protocol: "",
-					DstIP:    "",
+					IPVer:    "",
 					SrcIP:    "",
-					DstPort:  "",
 					SrcPort:  "",
+					DstIP:    "",
+					DstPort:  "",
+					Protocol: "",
 					TCPFlags: "",
 					Action:   "accept",
 				},
@@ -257,10 +263,11 @@ func buildFirewallRules(ruleList []any) []client.FirewallRule {
 		ruleProps := ruleMap.(map[string]any)
 		rules = append(rules, client.FirewallRule{
 			Name:     ruleProps["name"].(string),
-			DstIP:    ruleProps["dst_ip"].(string),
-			DstPort:  ruleProps["dst_port"].(string),
+			IPVer:    ruleProps["ip_version"].(string),
 			SrcIP:    ruleProps["src_ip"].(string),
 			SrcPort:  ruleProps["src_port"].(string),
+			DstIP:    ruleProps["dst_ip"].(string),
+			DstPort:  ruleProps["dst_port"].(string),
 			Protocol: ruleProps["protocol"].(string),
 			TCPFlags: ruleProps["tcp_flags"].(string),
 			Action:   ruleProps["action"].(string),
@@ -274,10 +281,11 @@ func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
 	for _, rule := range rules {
 		result = append(result, map[string]any{
 			"name":      rule.Name,
-			"dst_ip":    rule.DstIP,
-			"dst_port":  rule.DstPort,
-			"src_ip":    rule.SrcIP,
-			"src_port":  rule.SrcPort,
+			"ip_version": rule.IPVer,
+			"src_ip":     rule.SrcIP,
+			"src_port":   rule.SrcPort,
+			"dst_ip":     rule.DstIP,
+			"dst_port":   rule.DstPort,
 			"protocol":  rule.Protocol,
 			"tcp_flags": rule.TCPFlags,
 			"action":    rule.Action,

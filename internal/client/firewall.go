@@ -73,11 +73,14 @@ func (c *HetznerRobotClient) SetFirewall(
 	data.Set("status", firewall.Status)
 
 	for idx, rule := range firewall.Rules.Input {
+		ipVer := "ipv4"
+		if rule.IPVer != "" {
+			ipVer = rule.IPVer
+		}
+		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), ipVer)
+
 		if rule.Name != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][name]", idx), rule.Name)
-		}
-		if rule.IPVer != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), rule.IPVer)
 		}
 		if rule.SrcIP != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][src_ip]", idx), rule.SrcIP)
