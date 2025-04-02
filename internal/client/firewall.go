@@ -22,6 +22,7 @@ type FirewallRules struct {
 
 type FirewallRule struct {
 	Name     string `json:"name,omitempty"`
+	IPVer    string `json:"ip_version,omitempty"`
 	SrcIP    string `json:"src_ip,omitempty"`
 	SrcPort  string `json:"src_port,omitempty"`
 	DstIP    string `json:"dst_ip,omitempty"`
@@ -72,21 +73,23 @@ func (c *HetznerRobotClient) SetFirewall(
 	data.Set("status", firewall.Status)
 
 	for idx, rule := range firewall.Rules.Input {
-		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), "ipv4")
 		if rule.Name != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][name]", idx), rule.Name)
 		}
-		if rule.DstIP != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_ip]", idx), rule.DstIP)
-		}
-		if rule.DstPort != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_port]", idx), rule.DstPort)
+		if rule.IPVer != "" {
+			data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), rule.IPVer)
 		}
 		if rule.SrcIP != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][src_ip]", idx), rule.SrcIP)
 		}
 		if rule.SrcPort != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][src_port]", idx), rule.SrcPort)
+		}
+		if rule.DstIP != "" {
+			data.Set(fmt.Sprintf("rules[input][%d][dst_ip]", idx), rule.DstIP)
+		}
+		if rule.DstPort != "" {
+			data.Set(fmt.Sprintf("rules[input][%d][dst_port]", idx), rule.DstPort)
 		}
 		if rule.Protocol != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][protocol]", idx), rule.Protocol)
