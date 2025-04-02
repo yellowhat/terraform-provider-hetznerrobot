@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 	"time"
@@ -44,7 +45,7 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 && resp.StatusCode != 202 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read response body: %w", err)
@@ -113,7 +114,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 && resp.StatusCode != 202 {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("unable to read response body: %w", err)

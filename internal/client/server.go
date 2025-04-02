@@ -46,24 +46,27 @@ func (c *HetznerRobotClient) FetchAllServers() ([]Server, error) {
 		return nil, fmt.Errorf("FetchAllServers request error: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf(
-			"FetchAllServers: status %d, body %s",
-			resp.StatusCode,
-			string(bodyBytes),
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("FetchAllServers: status %d, body %s", resp.StatusCode, data)
 	}
+
 	var raw []struct {
 		Server Server `json:"server"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
 		return nil, fmt.Errorf("FetchAllServers decode error: %w", err)
 	}
+
 	servers := make([]Server, len(raw))
 	for i, item := range raw {
 		servers[i] = item.Server
 	}
+
 	return servers, nil
 }
 
@@ -74,21 +77,27 @@ func (c *HetznerRobotClient) FetchServerByID(id int) (Server, error) {
 		return Server{}, fmt.Errorf("FetchServerByID request error: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return Server{}, fmt.Errorf("unable to read response body: %w", err)
+		}
 		return Server{}, fmt.Errorf(
 			"FetchServerByID %d: status %d, body %s",
 			id,
 			resp.StatusCode,
-			string(bodyBytes),
+			data,
 		)
 	}
+
 	var result struct {
 		Server Server `json:"server"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID decode error: %w", err)
 	}
+
 	return result.Server, nil
 }
 
@@ -146,14 +155,20 @@ func (c *HetznerRobotClient) RenameServer(
 		return nil, fmt.Errorf("error renaming server %d to %s: %w", serverID, newName, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, data)
 	}
+
 	var renameResp HetznerRenameResponse
 	if err := json.NewDecoder(resp.Body).Decode(&renameResp); err != nil {
 		return nil, fmt.Errorf("error parsing rename response: %w", err)
 	}
+
 	return &renameResp, nil
 }
 
@@ -179,14 +194,20 @@ func (c *HetznerRobotClient) EnableRescueMode(
 		return nil, fmt.Errorf("error enabling rescue mode for server %d: %w", serverID, err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, data)
 	}
+
 	var rescueResp HetznerRescueResponse
 	if err := json.NewDecoder(resp.Body).Decode(&rescueResp); err != nil {
 		return nil, fmt.Errorf("error parsing rescue response: %w", err)
 	}
+
 	return &rescueResp, nil
 }
 
@@ -216,11 +237,12 @@ func (c *HetznerRobotClient) RebootServer(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, string(body))
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
+		return fmt.Errorf("unexpected status code %d, body: %s", resp.StatusCode, data)
 	}
-
-	fmt.Printf("[DEBUG] Server %d reset with type: %s\n", serverID, resetType)
 
 	if resetType == "power" || resetType == "power_long" {
 		time.Sleep(30 * time.Second)
@@ -245,15 +267,16 @@ func (c *HetznerRobotClient) RebootServer(
 		defer powerResp.Body.Close()
 
 		if powerResp.StatusCode != http.StatusOK {
-			body, _ := io.ReadAll(powerResp.Body)
+			data, err := io.ReadAll(powerResp.Body)
+			if err != nil {
+				return fmt.Errorf("unable to read response body: %w", err)
+			}
 			return fmt.Errorf(
 				"unexpected status code %d when turning on server, body: %s",
 				powerResp.StatusCode,
-				string(body),
+				data,
 			)
 		}
-
-		fmt.Printf("[DEBUG] Server %d successfully powered on\n", serverID)
 	}
 
 	return nil

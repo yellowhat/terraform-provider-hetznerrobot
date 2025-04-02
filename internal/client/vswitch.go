@@ -58,12 +58,11 @@ func (c *HetznerRobotClient) FetchVSwitchByIDWithContext(
 		return nil, nil
 	}
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf(
-			"error fetching VSwitch: status %d, body %s",
-			resp.StatusCode,
-			string(bodyBytes),
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("error fetching VSwitch: status %d, body %s", resp.StatusCode, data)
 	}
 
 	var vswitch VSwitch
@@ -125,18 +124,24 @@ func (c *HetznerRobotClient) FetchAllVSwitches(ctx context.Context) ([]VSwitch, 
 		return nil, fmt.Errorf("error fetching all vSwitches: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
 		return nil, fmt.Errorf(
 			"error fetching vSwitches: status %d, body %s",
 			resp.StatusCode,
-			string(bodyBytes),
+			data,
 		)
 	}
+
 	var vswitches []VSwitch
 	if err := json.NewDecoder(resp.Body).Decode(&vswitches); err != nil {
 		return nil, fmt.Errorf("error decoding vSwitches: %w", err)
 	}
+
 	return vswitches, nil
 }
 
@@ -158,18 +163,20 @@ func (c *HetznerRobotClient) CreateVSwitch(
 		return nil, fmt.Errorf("error creating VSwitch: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf(
-			"error creating VSwitch: status %d, body %s",
-			resp.StatusCode,
-			string(bodyBytes),
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("error creating VSwitch: status %d, body %s", resp.StatusCode, data)
 	}
+
 	var vswitch VSwitch
 	if err := json.NewDecoder(resp.Body).Decode(&vswitch); err != nil {
 		return nil, fmt.Errorf("error decoding VSwitch response: %w", err)
 	}
+
 	return &vswitch, nil
 }
 
@@ -201,27 +208,25 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		bodyStr := string(bodyBytes)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
 
 		switch resp.StatusCode {
 		case http.StatusBadRequest:
-			return fmt.Errorf("error updating VSwitch: INVALID_INPUT - %s", bodyStr)
+			return fmt.Errorf("error updating VSwitch: INVALID_INPUT - %s", data)
 		case http.StatusNotFound:
-			return fmt.Errorf("error updating VSwitch: NOT_FOUND - %s", bodyStr)
+			return fmt.Errorf("error updating VSwitch: NOT_FOUND - %s", data)
 		case http.StatusConflict:
-			if strings.Contains(bodyStr, "VSWITCH_IN_PROCESS") {
-				return fmt.Errorf("error updating VSwitch: VSWITCH_IN_PROCESS - %s", bodyStr)
+			if strings.Contains(string(data), "VSWITCH_IN_PROCESS") {
+				return fmt.Errorf("error updating VSwitch: VSWITCH_IN_PROCESS - %s", data)
 			}
-			if strings.Contains(bodyStr, "VSWITCH_VLAN_NOT_UNIQUE") {
-				return fmt.Errorf("error updating VSwitch: VSWITCH_VLAN_NOT_UNIQUE - %s", bodyStr)
+			if strings.Contains(string(data), "VSWITCH_VLAN_NOT_UNIQUE") {
+				return fmt.Errorf("error updating VSwitch: VSWITCH_VLAN_NOT_UNIQUE - %s", data)
 			}
 		default:
-			return fmt.Errorf(
-				"error updating VSwitch: status %d, body %s",
-				resp.StatusCode,
-				bodyStr,
-			)
+			return fmt.Errorf("error updating VSwitch: status %d, body %s", resp.StatusCode, data)
 		}
 	}
 
@@ -247,13 +252,13 @@ func (c *HetznerRobotClient) DeleteVSwitch(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf(
-			"error deleting VSwitch: status %d, body %s",
-			resp.StatusCode,
-			string(bodyBytes),
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
+		return fmt.Errorf("error deleting VSwitch: status %d, body %s", resp.StatusCode, data)
 	}
+
 	return nil
 }
 
@@ -278,13 +283,17 @@ func (c *HetznerRobotClient) AddVSwitchServers(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
 		return fmt.Errorf(
 			"error adding servers to VSwitch: status %d, body %s",
 			resp.StatusCode,
-			string(bodyBytes),
+			data,
 		)
 	}
+
 	return nil
 }
 
@@ -307,14 +316,19 @@ func (c *HetznerRobotClient) RemoveVSwitchServers(
 		return fmt.Errorf("error removing servers from VSwitch: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
 		return fmt.Errorf(
 			"error removing servers from VSwitch: status %d, body %s",
 			resp.StatusCode,
-			string(bodyBytes),
+			data,
 		)
 	}
+
 	return nil
 }
 
@@ -334,9 +348,15 @@ func (c *HetznerRobotClient) SetVSwitchCancellation(
 		return fmt.Errorf("error setting cancellation date: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
+		return fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, data)
 	}
+
 	return nil
 }
 

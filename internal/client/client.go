@@ -33,13 +33,16 @@ func (c *HetznerRobotClient) DoRequest(
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
+
 	req.SetBasicAuth(c.Config.Username, c.Config.Password)
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
+
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error making request: %w", err)
 	}
+
 	return resp, nil
 }
