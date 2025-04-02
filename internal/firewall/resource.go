@@ -280,15 +280,15 @@ func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
 	result := make([]map[string]any, 0, len(rules))
 	for _, rule := range rules {
 		result = append(result, map[string]any{
-			"name":      rule.Name,
+			"name":       rule.Name,
 			"ip_version": rule.IPVer,
 			"src_ip":     rule.SrcIP,
 			"src_port":   rule.SrcPort,
 			"dst_ip":     rule.DstIP,
 			"dst_port":   rule.DstPort,
-			"protocol":  rule.Protocol,
-			"tcp_flags": rule.TCPFlags,
-			"action":    rule.Action,
+			"protocol":   rule.Protocol,
+			"tcp_flags":  rule.TCPFlags,
+			"action":     rule.Action,
 		})
 	}
 	return result
