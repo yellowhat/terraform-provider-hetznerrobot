@@ -113,7 +113,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 && resp.StatusCode != 202 {
-		return nil, fmt.Errorf(
+		return fmt.Errorf(
 			"unexpected response status: %d, body: %s",
 			resp.StatusCode,
 			resp.Body,
