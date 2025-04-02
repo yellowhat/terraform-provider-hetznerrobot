@@ -74,9 +74,9 @@ func (c *HetznerRobotClient) FetchVSwitchByIDWithContext(
 
 func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error) {
 	var (
-		vswitches []VSwitch
-		mu        sync.Mutex
 		wg        sync.WaitGroup
+		mu        sync.Mutex
+		vswitches []VSwitch
 		errs      []error
 	)
 	sem := make(chan struct{}, 10)
