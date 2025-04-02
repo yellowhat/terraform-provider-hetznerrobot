@@ -22,7 +22,6 @@ type FirewallRules struct {
 
 type FirewallRule struct {
 	Name     string `json:"name,omitempty"`
-	IPVer    string `json:"ip_version,omitempty"`
 	SrcIP    string `json:"src_ip,omitempty"`
 	SrcPort  string `json:"src_port,omitempty"`
 	DstIP    string `json:"dst_ip,omitempty"`
@@ -73,12 +72,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	data.Set("status", firewall.Status)
 
 	for idx, rule := range firewall.Rules.Input {
-		ipVer := "ipv4"
-		if rule.IPVer != "" {
-			ipVer = rule.IPVer
-		}
-		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), ipVer)
-
+		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", idx), "ipv4")
 		if rule.Name != "" {
 			data.Set(fmt.Sprintf("rules[input][%d][name]", idx), rule.Name)
 		}
