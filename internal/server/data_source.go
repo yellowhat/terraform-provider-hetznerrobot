@@ -62,9 +62,9 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	)
 
 	if len(ids) == 0 {
-		servers, err = hClient.FetchAllServers()
+		servers, err = hClient.FetchAllServers(ctx)
 	} else {
-		servers, err = hClient.FetchServersByIDs(ids)
+		servers, err = hClient.FetchServersByIDs(ctx, ids)
 	}
 
 	if err != nil {

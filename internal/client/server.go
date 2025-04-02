@@ -39,9 +39,9 @@ type HetznerRenameResponse struct {
 	} `json:"server"`
 }
 
-func (c *HetznerRobotClient) FetchAllServers() ([]Server, error) {
+func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, error) {
 	path := "/server"
-	resp, err := c.DoRequest("GET", path, nil, "")
+	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("FetchAllServers request error: %w", err)
 	}
@@ -70,9 +70,9 @@ func (c *HetznerRobotClient) FetchAllServers() ([]Server, error) {
 	return servers, nil
 }
 
-func (c *HetznerRobotClient) FetchServerByID(id int) (Server, error) {
+func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Server, error) {
 	path := fmt.Sprintf("/server/%d", id)
-	resp, err := c.DoRequest("GET", path, nil, "")
+	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID request error: %w", err)
 	}
@@ -101,7 +101,7 @@ func (c *HetznerRobotClient) FetchServerByID(id int) (Server, error) {
 	return result.Server, nil
 }
 
-func (c *HetznerRobotClient) FetchServersByIDs(ids []int) ([]Server, error) {
+func (c *HetznerRobotClient) FetchServersByIDs(ctx context.Context, ids []int) ([]Server, error) {
 	var (
 		wg      sync.WaitGroup
 		mu      sync.Mutex
@@ -114,7 +114,7 @@ func (c *HetznerRobotClient) FetchServersByIDs(ids []int) ([]Server, error) {
 		go func(serverID int) {
 			defer wg.Done()
 			sem <- struct{}{}
-			srv, err := c.FetchServerByID(serverID)
+			srv, err := c.FetchServerByID(ctx, serverID)
 			<-sem
 			if err != nil {
 				mu.Lock()
@@ -146,6 +146,7 @@ func (c *HetznerRobotClient) RenameServer(
 	data := url.Values{}
 	data.Set("server_name", newName)
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		endpoint,
 		strings.NewReader(data.Encode()),
@@ -185,6 +186,7 @@ func (c *HetznerRobotClient) EnableRescueMode(
 		data.Add("authorized_key[]", key)
 	}
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		endpoint,
 		strings.NewReader(data.Encode()),
@@ -221,6 +223,7 @@ func (c *HetznerRobotClient) RebootServer(
 	data.Set("type", resetType)
 
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		endpoint,
 		strings.NewReader(data.Encode()),
@@ -251,6 +254,7 @@ func (c *HetznerRobotClient) RebootServer(
 		powerData.Set("action", "on")
 
 		powerResp, err := c.DoRequest(
+			ctx,
 			"POST",
 			endpoint,
 			strings.NewReader(data.Encode()),

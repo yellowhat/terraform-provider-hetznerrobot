@@ -48,7 +48,7 @@ func (c *HetznerRobotClient) FetchVSwitchByIDWithContext(
 	ctx context.Context,
 	id string,
 ) (*VSwitch, error) {
-	resp, err := c.DoRequest("GET", fmt.Sprintf("/vswitch/%s", id), nil, "")
+	resp, err := c.DoRequest(ctx, "GET", fmt.Sprintf("/vswitch/%s", id), nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("error fetching VSwitch: %w", err)
 	}
@@ -119,7 +119,7 @@ func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error
 }
 
 func (c *HetznerRobotClient) FetchAllVSwitches(ctx context.Context) ([]VSwitch, error) {
-	resp, err := c.DoRequest("GET", "/vswitch", nil, "")
+	resp, err := c.DoRequest(ctx, "GET", "/vswitch", nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("error fetching all vSwitches: %w", err)
 	}
@@ -154,6 +154,7 @@ func (c *HetznerRobotClient) CreateVSwitch(
 	data.Set("name", name)
 	data.Set("vlan", strconv.Itoa(vlan))
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		"/vswitch",
 		strings.NewReader(data.Encode()),
@@ -197,6 +198,7 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 	}
 
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		fmt.Sprintf("/vswitch/%s", id),
 		strings.NewReader(data.Encode()),
@@ -241,6 +243,7 @@ func (c *HetznerRobotClient) DeleteVSwitch(
 	data := url.Values{}
 	data.Set("cancellation_date", cancellationDate)
 	resp, err := c.DoRequest(
+		ctx,
 		"DELETE",
 		fmt.Sprintf("/vswitch/%s", id),
 		strings.NewReader(data.Encode()),
@@ -272,6 +275,7 @@ func (c *HetznerRobotClient) AddVSwitchServers(
 		data.Add("server[]", strconv.Itoa(server.ServerNumber))
 	}
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		fmt.Sprintf("/vswitch/%s/server", id),
 		strings.NewReader(data.Encode()),
@@ -307,6 +311,7 @@ func (c *HetznerRobotClient) RemoveVSwitchServers(
 		data.Add("server[]", strconv.Itoa(server.ServerNumber))
 	}
 	resp, err := c.DoRequest(
+		ctx,
 		"DELETE",
 		fmt.Sprintf("/vswitch/%s/server", id),
 		strings.NewReader(data.Encode()),

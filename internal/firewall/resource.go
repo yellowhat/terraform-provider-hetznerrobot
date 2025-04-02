@@ -110,7 +110,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
 	}
 
-	server, err := hClient.FetchServerByID(serverIDInt)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -149,7 +149,7 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
 	}
 
-	server, err := hClient.FetchServerByID(serverIDInt)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -182,7 +182,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
 	}
 
-	server, err := hClient.FetchServerByID(serverIDInt)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -231,7 +231,7 @@ func resourceFirewallImportState(
 		return nil, fmt.Errorf("invalid server ID: %w", err)
 	}
 
-	server, err := hClient.FetchServerByID(serverIDInt)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching server: %w", err)
 	}

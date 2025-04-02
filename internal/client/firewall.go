@@ -39,7 +39,7 @@ type FirewallResponse struct {
 
 func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firewall, error) {
 	path := fmt.Sprintf("/firewall/%s", ip)
-	resp, err := c.DoRequest("GET", path, nil, "")
+	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firewall: %w", err)
 	}
@@ -100,6 +100,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	}
 
 	resp, err := c.DoRequest(
+		ctx,
 		"POST",
 		path,
 		strings.NewReader(data.Encode()),
