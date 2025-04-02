@@ -44,7 +44,11 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 && resp.StatusCode != 202 {
-		return nil, fmt.Errorf("unexpected response status: %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"unexpected response status: %d, body: %s",
+			resp.StatusCode,
+			resp.Body,
+		)
 	}
 
 	var fwResp FirewallResponse
@@ -109,7 +113,11 @@ func (c *HetznerRobotClient) SetFirewall(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 && resp.StatusCode != 202 {
-		return fmt.Errorf("unexpected response status: %d", resp.StatusCode)
+		return nil, fmt.Errorf(
+			"unexpected response status: %d, body: %s",
+			resp.StatusCode,
+			resp.Body,
+		)
 	}
 
 	return c.waitForFirewallActive(ctx, firewall.IP, maxRetries, waitTime)
