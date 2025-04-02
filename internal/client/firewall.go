@@ -45,7 +45,7 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read response body: %w", err)
@@ -114,7 +114,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return fmt.Errorf("unable to read response body: %w", err)
