@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 	"time"
@@ -44,11 +45,11 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 && resp.StatusCode != 202 {
-		return nil, fmt.Errorf(
-			"unexpected response status: %d, body: %s",
-			resp.StatusCode,
-			resp.Body,
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read response body: %w", err)
+		}
+		return nil, fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, data)
 	}
 
 	var fwResp FirewallResponse
@@ -113,11 +114,11 @@ func (c *HetznerRobotClient) SetFirewall(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 && resp.StatusCode != 202 {
-		return fmt.Errorf(
-			"unexpected response status: %d, body: %s",
-			resp.StatusCode,
-			resp.Body,
-		)
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("unable to read response body: %w", err)
+		}
+		return fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, data)
 	}
 
 	return c.waitForFirewallActive(ctx, firewall.IP, maxRetries, waitTime)
