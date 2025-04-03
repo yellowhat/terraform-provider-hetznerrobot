@@ -88,7 +88,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if err := d.Set("servers", serverList); err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
 	idStr := "all"

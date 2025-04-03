@@ -113,9 +113,15 @@ func resourceOSRescueCreate(
 		return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
 	}
 
+	if err := d.Set("ip", ip); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting ip attribute: %w", err))
+	}
+
+	if err := d.Set("ssh_password", pass); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting ssh_password attribute: %w", err))
+	}
+
 	d.SetId(serverNumber)
-	_ = d.Set("ip", ip)
-	_ = d.Set("ssh_password", pass)
 
 	return nil
 }

@@ -77,7 +77,9 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			return diag.FromErr(fmt.Errorf("failed to pick random free VLAN: %w", err))
 		}
 		chosenVLAN = freeVLAN
-		_ = d.Set("vlan", chosenVLAN)
+		if err = d.Set("vlan", chosenVLAN); err != nil {
+			return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
+		}
 	}
 
 	vsw, err := hClient.CreateVSwitch(ctx, name, chosenVLAN)
@@ -113,13 +115,23 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	_ = d.Set("name", vsw.Name)
-	_ = d.Set("vlan", vsw.VLAN)
-	_ = d.Set("cancellation_date", vsw.Cancelled)
+	if err = d.Set("name", vsw.Name); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting name attribute: %w", err))
+	}
+
+	if err = d.Set("vlan", vsw.VLAN); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
+	}
+
+	if err = d.Set("cancellation_date", vsw.Cancelled); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting cancellation_date attribute: %w", err))
+	}
 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
-	_ = d.Set("servers", servers)
+	if err = d.Set("servers", servers); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
+	}
 
 	var incidents []string
 	for _, server := range vsw.Servers {
@@ -133,7 +145,9 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		}
 	}
 
-	_ = d.Set("incidents", incidents)
+	if err = d.Set("incidents", incidents); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting incidents attribute: %w", err))
+	}
 
 	return nil
 }

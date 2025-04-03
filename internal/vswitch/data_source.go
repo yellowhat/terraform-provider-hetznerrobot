@@ -83,13 +83,13 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			},
 		}
 		if err := d.Set("vswitches", placeholder); err != nil {
-			return diag.FromErr(err)
+			return diag.FromErr(fmt.Errorf("error setting vswitches attribute: %w", err))
 		}
 		return nil
 	}
 
 	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("error setting vswitches attribute: %w", err))
 	}
 
 	idStr := "all"

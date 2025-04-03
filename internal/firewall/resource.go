@@ -133,6 +133,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	d.SetId(serverID)
+
 	return resourceRead(ctx, d, meta)
 }
 
@@ -159,9 +160,17 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(err)
 	}
 
-	_ = d.Set("active", firewall.Status == statusTrue)
-	_ = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
-	_ = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
+	if err = d.Set("active", firewall.Status == statusTrue); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting active attribute: %w", err))
+	}
+
+	if err = d.Set("whitelist_hos", firewall.WhitelistHetznerServices); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting whitelist_hos attribute: %w", err))
+	}
+
+	if err = d.Set("rule", flattenFirewallRules(firewall.Rules.Input)); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting rule attribute: %w", err))
+	}
 
 	return nil
 }
@@ -212,6 +221,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	d.SetId("")
+
 	return nil
 }
 
@@ -241,11 +251,23 @@ func resourceFirewallImportState(
 		return nil, fmt.Errorf("could not find firewall for server ID %s: %w", serverID, err)
 	}
 
+	if err = d.Set("active", firewall.Status == "active"); err != nil {
+		return nil, fmt.Errorf("error setting active attribute: %w", err)
+	}
+
+	if err = d.Set("whitelist_hos", firewall.WhitelistHetznerServices); err != nil {
+		return nil, fmt.Errorf("error setting whitelist_hos attribute: %w", err)
+	}
+
+	if err = d.Set("rule", flattenFirewallRules(firewall.Rules.Input)); err != nil {
+		return nil, fmt.Errorf("error setting rule attribute: %w", err)
+	}
+
+	if err = d.Set("server_id", serverID); err != nil {
+		return nil, fmt.Errorf("error setting server_id attribute: %w", err)
+	}
+
 	d.SetId(serverID)
-	_ = d.Set("active", firewall.Status == "active")
-	_ = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
-	_ = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
-	_ = d.Set("server_id", serverID)
 
 	return []*schema.ResourceData{d}, nil
 }
