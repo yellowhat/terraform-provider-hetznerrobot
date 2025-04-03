@@ -3,7 +3,6 @@ package vswitch
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -28,7 +27,7 @@ func DataSource() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id":        {Type: schema.TypeString, Computed: true},
+						"id":        {Type: schema.TypeInt, Computed: true},
 						"name":      {Type: schema.TypeString, Computed: true},
 						"vlan":      {Type: schema.TypeInt, Computed: true},
 						"cancelled": {Type: schema.TypeBool, Computed: true},
@@ -94,7 +93,7 @@ func flattenVSwitches(vswitches []client.VSwitch) []map[string]any {
 	res := make([]map[string]any, 0, len(vswitches))
 	for _, vs := range vswitches {
 		res = append(res, map[string]any{
-			"id":        strconv.Itoa(vs.ID),
+			"id":        vs.ID,
 			"name":      vs.Name,
 			"vlan":      vs.VLAN,
 			"cancelled": vs.Cancelled,
