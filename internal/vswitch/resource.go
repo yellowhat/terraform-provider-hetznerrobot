@@ -123,10 +123,6 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
 	}
 
-	if err = d.Set("cancellation_date", vsw.Cancelled); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting cancellation_date attribute: %w", err))
-	}
-
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
 	if err = d.Set("servers", servers); err != nil {
