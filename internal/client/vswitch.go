@@ -208,22 +208,7 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 		if err != nil {
 			return fmt.Errorf("unable to read response body: %w", err)
 		}
-
-		switch resp.StatusCode {
-		case http.StatusBadRequest:
-			return fmt.Errorf("error updating VSwitch: INVALID_INPUT - %s", data)
-		case http.StatusNotFound:
-			return fmt.Errorf("error updating VSwitch: NOT_FOUND - %s", data)
-		case http.StatusConflict:
-			if strings.Contains(string(data), "VSWITCH_IN_PROCESS") {
-				return fmt.Errorf("error updating VSwitch: VSWITCH_IN_PROCESS - %s", data)
-			}
-			if strings.Contains(string(data), "VSWITCH_VLAN_NOT_UNIQUE") {
-				return fmt.Errorf("error updating VSwitch: VSWITCH_VLAN_NOT_UNIQUE - %s", data)
-			}
-		default:
-			return fmt.Errorf("error updating VSwitch: status %d, body %s", resp.StatusCode, data)
-		}
+		return fmt.Errorf("error updating VSwitch: status %d, body %s", resp.StatusCode, data)
 	}
 
 	return nil
