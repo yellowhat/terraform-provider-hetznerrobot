@@ -1,4 +1,4 @@
-package data_sources
+package vswitch
 
 import (
 	"context"
@@ -8,13 +8,15 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-	"hetznerrobot-provider/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-func DataSourceVSwitches() *schema.Resource {
+// DataSourceType is the type name of the Hetzner Robot vSwitch resource.
+const DataSourceType = "hetznerrobot_vswitch"
+
+func DataSource() *schema.Resource {
 	return &schema.Resource{
-		ReadContext: dataSourceVSwitchesRead,
+		ReadContext: dataSourceRead,
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
@@ -41,14 +43,14 @@ func DataSourceVSwitches() *schema.Resource {
 	}
 }
 
-func dataSourceVSwitchesRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
 	}
 
 	idsInterface := d.Get("ids").([]any)
-	var ids []string
+	ids := make([]string, 0, len(idsInterface))
 	for _, id := range idsInterface {
 		ids = append(ids, id.(string))
 	}
@@ -64,30 +66,18 @@ func dataSourceVSwitchesRead(ctx context.Context, d *schema.ResourceData, meta a
 			return diag.FromErr(fmt.Errorf("error fetching ALL vSwitches: %w", err))
 		}
 	} else {
-		vswitches, err = hClient.FetchVSwitchesByIDs(ids)
+		vswitches, err = hClient.FetchVSwitchesByIDs(ctx, ids)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("error fetching vSwitches by IDs: %w", err))
 		}
 	}
 
 	if len(vswitches) == 0 {
-		d.SetId("No found")
-		placeholder := []map[string]any{
-			{
-				"id":        "",
-				"name":      "vswitches not found",
-				"vlan":      0,
-				"cancelled": false,
-			},
-		}
-		if err := d.Set("vswitches", placeholder); err != nil {
-			return diag.FromErr(err)
-		}
-		return nil
+		return diag.FromErr(fmt.Errorf("no vSwitches found"))
 	}
 
 	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("error setting vswitches attribute: %w", err))
 	}
 
 	idStr := "all"

@@ -1,26 +1,28 @@
-package resources
+package vswitch
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-	"hetznerrobot-provider/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-func ResourceVSwitch() *schema.Resource {
+// ResourceType is the type name of the Hetzner Robo vSwitch resource.
+const ResourceType = "hetznerrobot_vswitch"
+
+func Resource() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceVSwitchCreate,
-		ReadContext:   resourceVSwitchRead,
-		UpdateContext: resourceVSwitchUpdate,
-		DeleteContext: resourceVSwitchDelete,
+		CreateContext: resourceCreate,
+		ReadContext:   resourceRead,
+		UpdateContext: resourceUpdate,
+		DeleteContext: resourceDelete,
 
 		Schema: map[string]*schema.Schema{
 			"name": {
@@ -55,7 +57,7 @@ func ResourceVSwitch() *schema.Resource {
 	}
 }
 
-func resourceVSwitchCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -67,15 +69,15 @@ func resourceVSwitchCreate(ctx context.Context, d *schema.ResourceData, meta any
 
 	if vlan, vlanProvided := d.GetOk("vlan"); vlanProvided {
 		chosenVLAN = vlan.(int)
-	} else if storedVLAN, vlanExists := d.GetOkExists("vlan"); vlanExists {
-		chosenVLAN = storedVLAN.(int)
 	} else {
 		freeVLAN, err := pickRandomFreeVLAN(ctx, hClient)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to pick random free VLAN: %w", err))
 		}
 		chosenVLAN = freeVLAN
-		_ = d.Set("vlan", chosenVLAN)
+		if err = d.Set("vlan", chosenVLAN); err != nil {
+			return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
+		}
 	}
 
 	vsw, err := hClient.CreateVSwitch(ctx, name, chosenVLAN)
@@ -95,10 +97,10 @@ func resourceVSwitchCreate(ctx context.Context, d *schema.ResourceData, meta any
 
 	d.SetId(strconv.Itoa(vsw.ID))
 
-	return resourceVSwitchRead(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func resourceVSwitchRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -106,39 +108,45 @@ func resourceVSwitchRead(ctx context.Context, d *schema.ResourceData, meta any) 
 
 	id := d.Id()
 
-	vsw, err := hClient.FetchVSwitchByIDWithContext(ctx, id)
+	vsw, err := hClient.FetchVSwitchByID(ctx, id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			fmt.Printf("vSwitch with ID %s not found, marking for recreation\n", id)
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	_ = d.Set("name", vsw.Name)
-	_ = d.Set("vlan", vsw.VLAN)
-	_ = d.Set("cancellation_date", vsw.Cancelled)
+	if err = d.Set("name", vsw.Name); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting name attribute: %w", err))
+	}
+
+	if err = d.Set("vlan", vsw.VLAN); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
+	}
 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
-	_ = d.Set("servers", servers)
+	if err = d.Set("servers", servers); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
+	}
 
 	var incidents []string
 	for _, server := range vsw.Servers {
 		if server.Status == "failed" {
-			message := fmt.Sprintf("Server %d failed to connect. Please check in the Hetzner web interface.", server.ServerNumber)
+			message := fmt.Sprintf(
+				"Server %d failed to connect. Please check in the Hetzner web interface.",
+				server.ServerNumber,
+			)
 			fmt.Println("[WARNING]", message)
 			incidents = append(incidents, message)
 		}
 	}
-	d.Set("incidents", incidents)
 
-	fmt.Printf("[INFO] Successfully read vSwitch ID: %s\n", id)
+	if err = d.Set("incidents", incidents); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting incidents attribute: %w", err))
+	}
+
 	return nil
 }
 
-func resourceVSwitchUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -153,7 +161,7 @@ func resourceVSwitchUpdate(ctx context.Context, d *schema.ResourceData, meta any
 	if d.HasChange("name") || d.HasChange("vlan") {
 		oldVlan, _ := d.GetChange("vlan")
 
-		if err := hClient.UpdateVSwitch(ctx, id, name, vlan, oldVlan.(int)); err != nil {
+		if err := hClient.UpdateVSwitch(ctx, id, name, vlan); err != nil {
 			return diag.FromErr(fmt.Errorf("error updating vSwitch: %w", err))
 		}
 
@@ -188,14 +196,16 @@ func resourceVSwitchUpdate(ctx context.Context, d *schema.ResourceData, meta any
 
 	if waitForReady {
 		if err := hClient.WaitForVSwitchReady(ctx, id, 20, 15*time.Second); err != nil {
-			return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after update: %w", err))
+			return diag.FromErr(
+				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
+			)
 		}
 	}
 
-	return resourceVSwitchRead(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func resourceVSwitchDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -219,7 +229,7 @@ func resourceVSwitchDelete(ctx context.Context, d *schema.ResourceData, meta any
 
 // helpers
 func parseServerIDs(servers []any) []int {
-	var result []int
+	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.(int))
 	}
@@ -227,7 +237,7 @@ func parseServerIDs(servers []any) []int {
 }
 
 func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
-	var servers []client.VSwitchServer
+	servers := make([]client.VSwitchServer, 0, len(serverIDs))
 	for _, id := range serverIDs {
 		servers = append(servers, client.VSwitchServer{ServerNumber: id})
 	}
@@ -235,7 +245,7 @@ func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
 }
 
 func flattenServers(servers []client.VSwitchServer) []int {
-	var result []int
+	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.ServerNumber)
 	}
@@ -264,10 +274,12 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 		return 0, fmt.Errorf("no free VLAN in [4000..4091], all are taken")
 	}
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	idx := r.Intn(len(free))
+	idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(free))))
+	if err != nil {
+		return 0, fmt.Errorf("generating a random index: %w", err)
+	}
 
-	return free[idx], nil
+	return free[idx.Int64()], nil
 }
 
 func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {

@@ -4,6 +4,17 @@ GOLANG_VER = 1.24.1
 # renovate: datasource=github-releases depName=hashicorp/terraform
 TERRAFORM_VER = 1.11.2
 
+.PHONY: it
+it: ## Start interactive go container
+	podman run \
+		--interactive \
+		--tty \
+		--rm \
+		--publish 9090:9090 \
+		--volume "${PWD}:/data:z" \
+		--workdir /data \
+		"docker.io/golang:$(GOLANG_VER)"
+
 .PHONY: docs
 docs: ## Generate docs
 	podman run \

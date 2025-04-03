@@ -1,4 +1,3 @@
-# Visit https://goreleaser.com for documentation on how to customize this behavior.
 ---
 version: 2
 
@@ -19,7 +18,6 @@ builds:
       - -X github.com/yellowhat/terraform-provider-hetzner-robot/hetzner.Commit={{ .Commit }}
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
       - arm64

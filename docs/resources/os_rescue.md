@@ -15,7 +15,7 @@ description: |-
 ```terraform
 resource "hetznerrobot_os_rescue" "test" {
   server_name   = "test"
-  server_number = 1234567
+  server_number = "1234567"
 }
 ```
 
@@ -24,8 +24,8 @@ resource "hetznerrobot_os_rescue" "test" {
 
 ### Required
 
+- `server_id` (String) Server ID.
 - `server_name` (String) The server will be renamed to this name.
-- `server_number` (String) Server ID.
 
 ### Optional
 

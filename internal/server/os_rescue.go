@@ -1,17 +1,18 @@
-package resources
+package server
 
 import (
 	"context"
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-	"hetznerrobot-provider/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
+
+// ResourceType is the type name of the Hetzner Robot OS Rescue resource.
+const ResourceOSRescueType = "hetznerrobot_os_rescue"
 
 type ServerInput struct {
 	ID   string
@@ -30,7 +31,7 @@ func ResourceOSRescue() *schema.Resource {
 				Required:    true,
 				Description: "The server will be renamed to this name.",
 			},
-			"server_number": {
+			"server_id": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Server ID.",
@@ -62,78 +63,85 @@ func ResourceOSRescue() *schema.Resource {
 	}
 }
 
-func resourceOSRescueCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceOSRescueCreate(
+	ctx context.Context,
+	d *schema.ResourceData,
+	meta any,
+) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
 	}
 
 	serverName := d.Get("server_name").(string)
-	serverNumber := d.Get("server_number").(string)
+	serverID := d.Get("server_id").(string)
 	rescueOS := d.Get("rescue_os").(string)
 	sshKeysRaw := d.Get("ssh_keys").([]any)
 
-	var sshKeys []string
+	sshKeys := make([]string, 0, len(sshKeysRaw))
 	for _, key := range sshKeysRaw {
 		sshKeys = append(sshKeys, key.(string))
 	}
 
-	serverID, err := strconv.Atoi(serverNumber)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %v", serverNumber, err))
-	}
-
-	_, err = hClient.RenameServer(ctx, serverID, serverName)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to rename server %d: %v", serverID, err))
-	}
-
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to enable rescue mode for server %d: %v", serverID, err))
+		return diag.FromErr(
+			fmt.Errorf("failed to enable rescue mode for server %s: %w", serverID, err),
+		)
 	}
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
 	if err := hClient.RebootServer(ctx, serverID, "hw"); err != nil {
-		return diag.FromErr(fmt.Errorf("failed to reboot server %d with power reset: %v", serverID, err))
+		return diag.FromErr(
+			fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
+		)
 	}
-
-	fmt.Printf("Connecting to server %s with password: %s\n", ip, pass)
 
 	if err := waitForSSH(ip, 3*time.Minute, 10*time.Second); err != nil {
-		return diag.FromErr(fmt.Errorf("SSH not available on server %d: %v", serverID, err))
+		return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
 	}
 
-	d.SetId(serverNumber)
-	d.Set("ip", ip)
-	d.Set("ssh_password", pass)
+	_, err = hClient.RenameServer(ctx, serverID, serverName)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("failed to rename server %s: %w", serverID, err))
+	}
+
+	if err := d.Set("ip", ip); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting ip attribute: %w", err))
+	}
+
+	if err := d.Set("ssh_password", pass); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting ssh_password attribute: %w", err))
+	}
+
+	d.SetId(serverID)
+
 	return nil
 }
 
-func resourceOSRescueUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceOSRescueUpdate(
+	ctx context.Context,
+	d *schema.ResourceData,
+	meta any,
+) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
 	}
 
 	serverName := d.Get("server_name").(string)
-	serverNumber := d.Get("server_number").(string)
+	serverID := d.Get("server_id").(string)
 
-	serverID, err := strconv.Atoi(serverNumber)
+	serverInfo, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %v", serverNumber, err))
-	}
-
-	serverInfo, err := hClient.FetchServerByID(serverID)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to fetch server %d info: %v", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to fetch server %s info: %w", serverID, err))
 	}
 
 	if serverName != serverInfo.ServerName {
 		_, err := hClient.RenameServer(ctx, serverID, serverName)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to rename server %d: %v", serverID, err))
+			return diag.FromErr(fmt.Errorf("failed to rename server %s: %w", serverID, err))
 		}
 	}
 
@@ -145,12 +153,16 @@ func waitForSSH(ip string, timeout time.Duration, interval time.Duration) error 
 	for time.Now().Before(deadline) {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:22", ip), 5*time.Second)
 		if err == nil {
-			conn.Close()
+			_ = conn.Close()
 			fmt.Printf("[INFO] SSH is available on the server %s\n", ip)
 			return nil
 		}
 
-		fmt.Printf("[WARN] Waiting for SSH on %s... Retrying in %v seconds\n", ip, interval.Seconds())
+		fmt.Printf(
+			"[WARN] Waiting for SSH on %s... Retrying in %v seconds\n",
+			ip,
+			interval.Seconds(),
+		)
 		time.Sleep(interval)
 	}
 

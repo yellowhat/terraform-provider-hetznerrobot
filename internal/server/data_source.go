@@ -1,4 +1,4 @@
-package data_sources
+package server
 
 import (
 	"context"
@@ -7,9 +7,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-	"hetznerrobot-provider/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
+
+// DataSourceType is the type name of the Hetzner Robot Server resource.
+const DataSourceType = "hetznerrobot_server"
 
 func DataSourceServers() *schema.Resource {
 	return &schema.Resource{
@@ -18,7 +20,7 @@ func DataSourceServers() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"servers": {
 				Type:     schema.TypeList,
@@ -49,9 +51,9 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	rawIDs := d.Get("ids").([]any)
-	var ids []int
+	ids := make([]string, 0, len(rawIDs))
 	for _, v := range rawIDs {
-		ids = append(ids, v.(int))
+		ids = append(ids, v.(string))
 	}
 
 	var (
@@ -60,9 +62,9 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	)
 
 	if len(ids) == 0 {
-		servers, err = hClient.FetchAllServers()
+		servers, err = hClient.FetchAllServers(ctx)
 	} else {
-		servers, err = hClient.FetchServersByIDs(ids)
+		servers, err = hClient.FetchServersByIDs(ctx, ids)
 	}
 
 	if err != nil {
@@ -86,23 +88,15 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if err := d.Set("servers", serverList); err != nil {
-		return diag.FromErr(err)
+		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
 	idStr := "all"
 	if len(ids) > 0 {
-		idStr = strings.Join(intSliceToStringSlice(ids), "-")
+		idStr = strings.Join(ids, "-")
 	}
 
 	d.SetId(fmt.Sprintf("servers-%s", idStr))
 
 	return nil
-}
-
-func intSliceToStringSlice(ints []int) []string {
-	out := make([]string, len(ints))
-	for i, v := range ints {
-		out[i] = fmt.Sprintf("%d", v)
-	}
-	return out
 }

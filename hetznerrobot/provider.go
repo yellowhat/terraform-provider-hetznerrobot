@@ -1,15 +1,14 @@
-package provider
+package hetznerrobot
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
-	"hetznerrobot-provider/client"
-	"hetznerrobot-provider/data_sources"
-	"hetznerrobot-provider/resources"
-	"hetznerrobot-provider/shared"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
 func Provider() *schema.Provider {
@@ -29,20 +28,23 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("HETZNERROBOT_PASSWORD", nil),
 			},
 			"url": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("HETZNERROBOT_URL", "https://robot-ws.your-server.de"),
+				Type:     schema.TypeString,
+				Optional: true,
+				DefaultFunc: schema.EnvDefaultFunc(
+					"HETZNERROBOT_URL",
+					"https://robot-ws.your-server.de",
+				),
 				Description: "Base URL for the Hetzner Robot API.",
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"hetznerrobot_firewall":  resources.ResourceFirewall(),
-			"hetznerrobot_os_rescue": resources.ResourceOSRescue(),
-			"hetznerrobot_vswitch":   resources.ResourceVSwitch(),
+			"hetznerrobot_firewall":  firewall.Resource(),
+			"hetznerrobot_os_rescue": server.ResourceOSRescue(),
+			"hetznerrobot_vswitch":   vswitch.Resource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"hetznerrobot_server":  data_sources.DataSourceServers(),
-			"hetznerrobot_vswitch": data_sources.DataSourceVSwitches(),
+			"hetznerrobot_server":  server.DataSourceServers(),
+			"hetznerrobot_vswitch": vswitch.DataSource(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
@@ -61,11 +63,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (any, diag.D
 		})
 		return nil, diags
 	}
-	config := &shared.ProviderConfig{
+	config := &client.ProviderConfig{
 		Username: username,
 		Password: password,
 		BaseURL:  url,
 	}
-	client := client.NewHetznerRobotClient(config)
+	client := client.New(config)
 	return client, diags
 }
