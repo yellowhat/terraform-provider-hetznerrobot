@@ -20,7 +20,7 @@ func DataSourceServers() *schema.Resource {
 			"ids": {
 				Type:     schema.TypeList,
 				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"servers": {
 				Type:     schema.TypeList,
