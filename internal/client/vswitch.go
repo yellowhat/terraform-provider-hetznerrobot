@@ -47,26 +47,30 @@ type VSwitchCloudNet struct {
 func (c *HetznerRobotClient) FetchVSwitchByID(
 	ctx context.Context,
 	id string,
-) (*VSwitch, error) {
+) (VSwitch, error) {
 	resp, err := c.DoRequest(ctx, "GET", fmt.Sprintf("/vswitch/%s", id), nil, "")
 	if err != nil {
-		return nil, fmt.Errorf("error fetching VSwitch: %w", err)
+		return VSwitch{}, fmt.Errorf("error fetching VSwitch: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, fmt.Errorf("unable to read response body: %w", err)
+			return VSwitch{}, fmt.Errorf("unable to read response body: %w", err)
 		}
-		return nil, fmt.Errorf("error fetching VSwitch: status %d, body %s", resp.StatusCode, data)
+		return VSwitch{}, fmt.Errorf(
+			"error fetching VSwitch: status %d, body %s",
+			resp.StatusCode,
+			data,
+		)
 	}
 
 	var vswitch VSwitch
 	if err := json.NewDecoder(resp.Body).Decode(&vswitch); err != nil {
-		return nil, fmt.Errorf("error decoding VSwitch response: %w", err)
+		return VSwitch{}, fmt.Errorf("error decoding VSwitch response: %w", err)
 	}
-	return &vswitch, nil
+	return vswitch, nil
 }
 
 func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error) {
@@ -93,7 +97,7 @@ func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error
 				return
 			}
 			mu.Lock()
-			vswitches = append(vswitches, *vswitch)
+			vswitches = append(vswitches, vswitch)
 			mu.Unlock()
 		}(id)
 	}
@@ -344,10 +348,6 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 		vsw, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)
-		}
-
-		if vsw == nil {
-			return fmt.Errorf("vSwitch with ID %s not found", id)
 		}
 
 		allReady := true
