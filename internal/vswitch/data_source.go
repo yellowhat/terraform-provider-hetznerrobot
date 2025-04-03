@@ -19,7 +19,7 @@ func DataSource() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Elem:     &schema.Schema{Type: schema.TypeInt},
 				Optional: true,
 			},
 			"vswitches": {
