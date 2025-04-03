@@ -73,19 +73,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if len(vswitches) == 0 {
-		d.SetId("No found")
-		placeholder := []map[string]any{
-			{
-				"id":        "",
-				"name":      "vswitches not found",
-				"vlan":      0,
-				"cancelled": false,
-			},
-		}
-		if err := d.Set("vswitches", placeholder); err != nil {
-			return diag.FromErr(fmt.Errorf("error setting vswitches attribute: %w", err))
-		}
-		return nil
+		return diag.FromErr(fmt.Errorf("no vSwitches found"))
 	}
 
 	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
