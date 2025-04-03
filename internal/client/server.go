@@ -248,39 +248,46 @@ func (c *HetznerRobotClient) RebootServer(
 	}
 
 	if resetType == "power" || resetType == "power_long" {
+		// Allow some time to power off
 		time.Sleep(30 * time.Second)
-		fmt.Printf("Turning on server %d after %s reset\n", serverID, resetType)
-		powerData := url.Values{}
-		powerData.Set("action", "on")
+		if err := c.powerOnServer(ctx, serverID, endpoint); err != nil {
+			return fmt.Errorf("unable to power on: %w", err)
+		}
+	}
 
-		powerResp, err := c.DoRequest(
-			ctx,
-			"POST",
-			endpoint,
-			strings.NewReader(data.Encode()),
-			"application/x-www-form-urlencoded",
-		)
+	return nil
+}
+
+func (c *HetznerRobotClient) powerOnServer(
+	ctx context.Context,
+	serverID int,
+	endpoint string,
+) error {
+	data := url.Values{}
+	data.Set("action", "on")
+
+	resp, err := c.DoRequest(
+		ctx,
+		"POST",
+		endpoint,
+		strings.NewReader(data.Encode()),
+		"application/x-www-form-urlencoded",
+	)
+	if err != nil {
+		return fmt.Errorf("error turning on server %d after power off: %w", serverID, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf(
-				"error turning on server %d after %s reset: %w",
-				serverID,
-				resetType,
-				err,
-			)
+			return fmt.Errorf("unable to read response body: %w", err)
 		}
-		defer powerResp.Body.Close()
-
-		if powerResp.StatusCode != http.StatusOK {
-			data, err := io.ReadAll(powerResp.Body)
-			if err != nil {
-				return fmt.Errorf("unable to read response body: %w", err)
-			}
-			return fmt.Errorf(
-				"unexpected status code %d when turning on server, body: %s",
-				powerResp.StatusCode,
-				data,
-			)
-		}
+		return fmt.Errorf(
+			"unexpected status code %d when turning on server, body: %s",
+			resp.StatusCode,
+			data,
+		)
 	}
 
 	return nil
