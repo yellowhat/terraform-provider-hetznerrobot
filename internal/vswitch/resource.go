@@ -69,8 +69,6 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	if vlan, vlanProvided := d.GetOk("vlan"); vlanProvided {
 		chosenVLAN = vlan.(int)
-	} else if storedVLAN, vlanExists := d.GetOk("vlan"); vlanExists {
-		chosenVLAN = storedVLAN.(int)
 	} else {
 		freeVLAN, err := pickRandomFreeVLAN(ctx, hClient)
 		if err != nil {
