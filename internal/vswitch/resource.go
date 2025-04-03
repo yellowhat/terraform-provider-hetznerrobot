@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -111,11 +110,6 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 
 	vsw, err := hClient.FetchVSwitchByID(ctx, id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			fmt.Printf("vSwitch with ID %s not found, marking for recreation\n", id)
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 

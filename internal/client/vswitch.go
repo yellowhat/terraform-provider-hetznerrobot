@@ -54,9 +54,6 @@ func (c *HetznerRobotClient) FetchVSwitchByID(
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
 	if resp.StatusCode != http.StatusOK {
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
