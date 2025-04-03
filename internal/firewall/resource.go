@@ -3,6 +3,7 @@ package firewall
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -104,8 +105,12 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	serverID := d.Get("server_id").(string)
+	serverIDInt, err := strconv.Atoi(serverID)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
+	}
 
-	server, err := hClient.FetchServerByID(ctx, serverID)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -139,8 +144,12 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 	}
 
 	serverID := d.Get("server_id").(string)
+	serverIDInt, err := strconv.Atoi(serverID)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
+	}
 
-	server, err := hClient.FetchServerByID(ctx, serverID)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -176,8 +185,12 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	serverID := d.Get("server_id").(string)
+	serverIDInt, err := strconv.Atoi(serverID)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("invalid server ID: %w", err))
+	}
 
-	server, err := hClient.FetchServerByID(ctx, serverID)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
@@ -222,8 +235,12 @@ func resourceFirewallImportState(
 	}
 
 	serverID := d.Id()
+	serverIDInt, err := strconv.Atoi(serverID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid server ID: %w", err)
+	}
 
-	server, err := hClient.FetchServerByID(ctx, serverID)
+	server, err := hClient.FetchServerByID(ctx, serverIDInt)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching server: %w", err)
 	}

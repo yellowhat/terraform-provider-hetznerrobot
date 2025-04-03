@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 // DataSourceType is the type name of the Hetzner Robot vSwitch resource.
@@ -50,9 +50,9 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	idsInterface := d.Get("ids").([]any)
-	ids := make([]string, 0, len(idsInterface))
+	ids := make([]int, 0, len(idsInterface))
 	for _, id := range idsInterface {
-		ids = append(ids, id.(string))
+		ids = append(ids, id.(int))
 	}
 
 	var (
@@ -82,7 +82,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	idStr := "all"
 	if len(ids) > 0 {
-		idStr = strings.Join(ids, "-")
+		idStr = helpers.IntSliceToString(ids)
 	}
 
 	d.SetId(fmt.Sprintf("vswitches-%s", idStr))

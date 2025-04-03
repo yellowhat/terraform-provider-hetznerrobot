@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 type Server struct {
@@ -70,8 +72,8 @@ func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, err
 	return servers, nil
 }
 
-func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Server, error) {
-	path := fmt.Sprintf("/server/%s", id)
+func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Server, error) {
+	path := fmt.Sprintf("/server/%d", id)
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID request error: %w", err)
@@ -84,7 +86,7 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Se
 			return Server{}, fmt.Errorf("unable to read response body: %w", err)
 		}
 		return Server{}, fmt.Errorf(
-			"FetchServerByID %s: status %d, body %s",
+			"FetchServerByID %d: status %d, body %s",
 			id,
 			resp.StatusCode,
 			data,
@@ -103,13 +105,13 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Se
 
 func (c *HetznerRobotClient) FetchServersByIDs(
 	ctx context.Context,
-	ids []string,
+	ids []int,
 ) ([]Server, error) {
 	var (
 		mu      sync.Mutex
 		servers []Server
 	)
-	f := func(ctx context.Context, id string) error {
+	f := func(ctx context.Context, id int) error {
 		server, err := c.FetchServerByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error server fetching: %v", err)
@@ -121,7 +123,7 @@ func (c *HetznerRobotClient) FetchServersByIDs(
 		return nil
 	}
 
-	err := runConcurrentTasks(ctx, ids, f)
+	err := helpers.RunConcurrentTasks(ctx, ids, f)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching Servers: %w", err)
 	}
