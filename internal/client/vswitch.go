@@ -316,38 +316,32 @@ func (c *HetznerRobotClient) RemoveVSwitchServers(
 	return nil
 }
 
+func isVSwitchReady(servers []VSwitchServer) bool {
+	for _, server := range servers {
+		if server.Status == "processing" {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
 	id string,
 	maxRetries int,
 	waitTime time.Duration,
 ) error {
-	for i := range maxRetries {
+	for range maxRetries {
 		vsw, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)
 		}
 
-		allReady := true
-		for _, server := range vsw.Servers {
-			fmt.Printf("Checking server %d status: %s\n", server.ServerNumber, server.Status)
-			if server.Status == "processing" {
-				allReady = false
-				break
-			}
-		}
-
-		if allReady {
-			fmt.Println("vSwitch is now ready.")
+		if isVSwitchReady(vsw.Servers) {
 			return nil
 		}
 
-		fmt.Printf(
-			"vSwitch is still processing, retrying in %v seconds (%d/%d)...\n",
-			waitTime.Seconds(),
-			i+1,
-			maxRetries,
-		)
 		time.Sleep(waitTime)
 	}
 
