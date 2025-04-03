@@ -70,8 +70,8 @@ func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, err
 	return servers, nil
 }
 
-func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Server, error) {
-	path := fmt.Sprintf("/server/%d", id)
+func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Server, error) {
+	path := fmt.Sprintf("/server/%s", id)
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID request error: %w", err)
@@ -84,7 +84,7 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Serve
 			return Server{}, fmt.Errorf("unable to read response body: %w", err)
 		}
 		return Server{}, fmt.Errorf(
-			"FetchServerByID %d: status %d, body %s",
+			"FetchServerByID %s: status %d, body %s",
 			id,
 			resp.StatusCode,
 			data,
@@ -101,36 +101,31 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Serve
 	return result.Server, nil
 }
 
-func (c *HetznerRobotClient) FetchServersByIDs(ctx context.Context, ids []int) ([]Server, error) {
+func (c *HetznerRobotClient) FetchServersByIDs(
+	ctx context.Context,
+	ids []string,
+) ([]Server, error) {
 	var (
-		wg      sync.WaitGroup
 		mu      sync.Mutex
 		servers []Server
-		errs    []error
 	)
-	sem := make(chan struct{}, 10)
-	for _, id := range ids {
-		wg.Add(1)
-		go func(serverID int) {
-			defer wg.Done()
-			sem <- struct{}{}
-			srv, err := c.FetchServerByID(ctx, serverID)
-			<-sem
-			if err != nil {
-				mu.Lock()
-				errs = append(errs, err)
-				mu.Unlock()
-				return
-			}
-			mu.Lock()
-			servers = append(servers, srv)
-			mu.Unlock()
-		}(id)
+	f := func(ctx context.Context, id string) error {
+		server, err := c.FetchServerByID(ctx, id)
+		if err != nil {
+			return fmt.Errorf("error server fetching: %v", err)
+		}
+		mu.Lock()
+		servers = append(servers, server)
+		mu.Unlock()
+
+		return nil
 	}
-	wg.Wait()
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("FetchServersByIDs errors: %v", errs)
+
+	err := runConcurrentTasks(ctx, ids, f)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching Servers: %w", err)
 	}
+
 	sort.Slice(servers, func(i, j int) bool {
 		return servers[i].Number < servers[j].Number
 	})

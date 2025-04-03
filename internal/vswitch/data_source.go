@@ -66,7 +66,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			return diag.FromErr(fmt.Errorf("error fetching ALL vSwitches: %w", err))
 		}
 	} else {
-		vswitches, err = hClient.FetchVSwitchesByIDs(ids)
+		vswitches, err = hClient.FetchVSwitchesByIDs(ctx, ids)
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("error fetching vSwitches by IDs: %w", err))
 		}

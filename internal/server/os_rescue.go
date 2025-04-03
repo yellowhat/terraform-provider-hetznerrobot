@@ -144,9 +144,9 @@ func resourceOSRescueUpdate(
 		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
 	}
 
-	serverInfo, err := hClient.FetchServerByID(ctx, serverID)
+	serverInfo, err := hClient.FetchServerByID(ctx, serverNumber)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to fetch server %d info: %w", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to fetch server %s info: %w", serverNumber, err))
 	}
 
 	if serverName != serverInfo.ServerName {

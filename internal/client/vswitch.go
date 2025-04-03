@@ -73,46 +73,31 @@ func (c *HetznerRobotClient) FetchVSwitchByID(
 	return vswitch, nil
 }
 
-func (c *HetznerRobotClient) FetchVSwitchesByIDs(ids []string) ([]VSwitch, error) {
+func (c *HetznerRobotClient) FetchVSwitchesByIDs(
+	ctx context.Context,
+	ids []string,
+) ([]VSwitch, error) {
 	var (
-		wg        sync.WaitGroup
 		mu        sync.Mutex
 		vswitches []VSwitch
-		errs      []error
 	)
-	sem := make(chan struct{}, 10)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	for _, id := range ids {
-		wg.Add(1)
-		go func(vswitchID string) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			vswitch, err := c.FetchVSwitchByID(ctx, vswitchID)
-			if err != nil {
-				mu.Lock()
-				errs = append(errs, err)
-				mu.Unlock()
-				return
-			}
-			mu.Lock()
-			vswitches = append(vswitches, vswitch)
-			mu.Unlock()
-		}(id)
-	}
-	wg.Wait()
-	if len(errs) > 0 {
-		firstErrors := errs
-		if len(errs) > 5 {
-			firstErrors = errs[:5]
+	f := func(ctx context.Context, id string) error {
+		vswitch, err := c.FetchVSwitchByID(ctx, id)
+		if err != nil {
+			return fmt.Errorf("error vSwitch fetching: %v", err)
 		}
-		return nil, fmt.Errorf(
-			"errors occurred: %v (and %d more)",
-			firstErrors,
-			len(errs)-len(firstErrors),
-		)
+		mu.Lock()
+		vswitches = append(vswitches, vswitch)
+		mu.Unlock()
+
+		return nil
 	}
+
+	err := runConcurrentTasks(ctx, ids, f)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching vSwitches: %w", err)
+	}
+
 	sort.Slice(vswitches, func(i, j int) bool {
 		return vswitches[i].ID < vswitches[j].ID
 	})
