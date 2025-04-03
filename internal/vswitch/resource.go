@@ -153,7 +153,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if d.HasChange("name") || d.HasChange("vlan") {
 		oldVlan, _ := d.GetChange("vlan")
 
-		if err := hClient.UpdateVSwitch(ctx, id, name, vlan, oldVlan.(int)); err != nil {
+		if err := hClient.UpdateVSwitch(ctx, id, name, vlan); err != nil {
 			return diag.FromErr(fmt.Errorf("error updating vSwitch: %w", err))
 		}
 

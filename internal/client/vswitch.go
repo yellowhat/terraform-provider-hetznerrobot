@@ -186,17 +186,10 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 	ctx context.Context,
 	id, name string,
 	vlan int,
-	oldVlan int,
 ) error {
 	data := url.Values{}
 	data.Set("name", name)
-
-	if vlan != oldVlan {
-		data.Set("vlan", strconv.Itoa(vlan))
-		fmt.Printf("VLAN changed, including in update request: %d -> %d\n", oldVlan, vlan)
-	} else {
-		fmt.Printf("VLAN has not changed, sending only name update\n")
-	}
+	data.Set("vlan", strconv.Itoa(vlan))
 
 	resp, err := c.DoRequest(
 		ctx,
