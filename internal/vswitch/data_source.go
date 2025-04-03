@@ -3,11 +3,12 @@ package vswitch
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
-	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 // DataSourceType is the type name of the Hetzner Robot vSwitch resource.
@@ -19,7 +20,7 @@ func DataSource() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"ids": {
 				Type:     schema.TypeList,
-				Elem:     &schema.Schema{Type: schema.TypeInt},
+				Elem:     &schema.Schema{Type: schema.TypeString},
 				Optional: true,
 			},
 			"vswitches": {
@@ -27,7 +28,7 @@ func DataSource() *schema.Resource {
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"id":        {Type: schema.TypeInt, Computed: true},
+						"id":        {Type: schema.TypeString, Computed: true},
 						"name":      {Type: schema.TypeString, Computed: true},
 						"vlan":      {Type: schema.TypeInt, Computed: true},
 						"cancelled": {Type: schema.TypeBool, Computed: true},
@@ -49,9 +50,9 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	idsInterface := d.Get("ids").([]any)
-	ids := make([]int, 0, len(idsInterface))
+	ids := make([]string, 0, len(idsInterface))
 	for _, id := range idsInterface {
-		ids = append(ids, id.(int))
+		ids = append(ids, id.(string))
 	}
 
 	var (
@@ -81,7 +82,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	idStr := "all"
 	if len(ids) > 0 {
-		idStr = helpers.IntSliceToString(ids)
+		idStr = strings.Join(ids, "-")
 	}
 
 	d.SetId(fmt.Sprintf("vswitches-%s", idStr))
@@ -93,7 +94,7 @@ func flattenVSwitches(vswitches []client.VSwitch) []map[string]any {
 	res := make([]map[string]any, 0, len(vswitches))
 	for _, vs := range vswitches {
 		res = append(res, map[string]any{
-			"id":        vs.ID,
+			"id":        strconv.Itoa(vs.ID),
 			"name":      vs.Name,
 			"vlan":      vs.VLAN,
 			"cancelled": vs.Cancelled,

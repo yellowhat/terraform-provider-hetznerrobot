@@ -72,8 +72,8 @@ func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, err
 	return servers, nil
 }
 
-func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Server, error) {
-	path := fmt.Sprintf("/server/%d", id)
+func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Server, error) {
+	path := fmt.Sprintf("/server/%s", id)
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID request error: %w", err)
@@ -86,7 +86,7 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Serve
 			return Server{}, fmt.Errorf("unable to read response body: %w", err)
 		}
 		return Server{}, fmt.Errorf(
-			"FetchServerByID %d: status %d, body %s",
+			"FetchServerByID %s: status %d, body %s",
 			id,
 			resp.StatusCode,
 			data,
@@ -105,13 +105,13 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id int) (Serve
 
 func (c *HetznerRobotClient) FetchServersByIDs(
 	ctx context.Context,
-	ids []int,
+	ids []string,
 ) ([]Server, error) {
 	var (
 		mu      sync.Mutex
 		servers []Server
 	)
-	f := func(ctx context.Context, id int) error {
+	f := func(ctx context.Context, id string) error {
 		server, err := c.FetchServerByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error server fetching: %v", err)
@@ -136,10 +136,10 @@ func (c *HetznerRobotClient) FetchServersByIDs(
 
 func (c *HetznerRobotClient) RenameServer(
 	ctx context.Context,
-	serverID int,
+	serverID string,
 	newName string,
 ) (*HetznerRenameResponse, error) {
-	endpoint := fmt.Sprintf("/server/%d", serverID)
+	endpoint := fmt.Sprintf("/server/%s", serverID)
 	data := url.Values{}
 	data.Set("server_name", newName)
 	resp, err := c.DoRequest(
@@ -150,7 +150,7 @@ func (c *HetznerRobotClient) RenameServer(
 		"application/x-www-form-urlencoded",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error renaming server %d to %s: %w", serverID, newName, err)
+		return nil, fmt.Errorf("error renaming server %s to %s: %w", serverID, newName, err)
 	}
 	defer resp.Body.Close()
 
@@ -172,11 +172,11 @@ func (c *HetznerRobotClient) RenameServer(
 
 func (c *HetznerRobotClient) EnableRescueMode(
 	ctx context.Context,
-	serverID int,
+	serverID string,
 	os string,
 	sshKeys []string,
 ) (*HetznerRescueResponse, error) {
-	endpoint := fmt.Sprintf("/boot/%d/rescue", serverID)
+	endpoint := fmt.Sprintf("/boot/%s/rescue", serverID)
 	data := url.Values{}
 	data.Set("os", os)
 	for _, key := range sshKeys {
@@ -190,7 +190,7 @@ func (c *HetznerRobotClient) EnableRescueMode(
 		"application/x-www-form-urlencoded",
 	)
 	if err != nil {
-		return nil, fmt.Errorf("error enabling rescue mode for server %d: %w", serverID, err)
+		return nil, fmt.Errorf("error enabling rescue mode for server %s: %w", serverID, err)
 	}
 	defer resp.Body.Close()
 
@@ -212,10 +212,10 @@ func (c *HetznerRobotClient) EnableRescueMode(
 
 func (c *HetznerRobotClient) RebootServer(
 	ctx context.Context,
-	serverID int,
+	serverID string,
 	resetType string,
 ) error {
-	endpoint := fmt.Sprintf("/reset/%d", serverID)
+	endpoint := fmt.Sprintf("/reset/%s", serverID)
 	data := url.Values{}
 	data.Set("type", resetType)
 
@@ -228,7 +228,7 @@ func (c *HetznerRobotClient) RebootServer(
 	)
 	if err != nil {
 		return fmt.Errorf(
-			"error rebooting server %d with reset type %s: %w",
+			"error rebooting server %s with reset type %s: %w",
 			serverID,
 			resetType,
 			err,
@@ -257,7 +257,7 @@ func (c *HetznerRobotClient) RebootServer(
 
 func (c *HetznerRobotClient) powerOnServer(
 	ctx context.Context,
-	serverID int,
+	serverID string,
 	endpoint string,
 ) error {
 	data := url.Values{}
@@ -271,7 +271,7 @@ func (c *HetznerRobotClient) powerOnServer(
 		"application/x-www-form-urlencoded",
 	)
 	if err != nil {
-		return fmt.Errorf("error turning on server %d after power off: %w", serverID, err)
+		return fmt.Errorf("error turning on server %s after power off: %w", serverID, err)
 	}
 	defer resp.Body.Close()
 

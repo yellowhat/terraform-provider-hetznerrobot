@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -32,7 +31,7 @@ func ResourceOSRescue() *schema.Resource {
 				Required:    true,
 				Description: "The server will be renamed to this name.",
 			},
-			"server_number": {
+			"server_id": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Server ID.",
@@ -75,7 +74,7 @@ func resourceOSRescueCreate(
 	}
 
 	serverName := d.Get("server_name").(string)
-	serverNumber := d.Get("server_number").(string)
+	serverID := d.Get("server_id").(string)
 	rescueOS := d.Get("rescue_os").(string)
 	sshKeysRaw := d.Get("ssh_keys").([]any)
 
@@ -84,15 +83,10 @@ func resourceOSRescueCreate(
 		sshKeys = append(sshKeys, key.(string))
 	}
 
-	serverID, err := strconv.Atoi(serverNumber)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
-	}
-
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
 		return diag.FromErr(
-			fmt.Errorf("failed to enable rescue mode for server %d: %w", serverID, err),
+			fmt.Errorf("failed to enable rescue mode for server %s: %w", serverID, err),
 		)
 	}
 	ip := rescueResp.Rescue.ServerIP
@@ -100,17 +94,17 @@ func resourceOSRescueCreate(
 
 	if err := hClient.RebootServer(ctx, serverID, "hw"); err != nil {
 		return diag.FromErr(
-			fmt.Errorf("failed to reboot server %d with power reset: %w", serverID, err),
+			fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
 		)
 	}
 
 	if err := waitForSSH(ip, 3*time.Minute, 10*time.Second); err != nil {
-		return diag.FromErr(fmt.Errorf("SSH not available on server %d: %w", serverID, err))
+		return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
 	}
 
 	_, err = hClient.RenameServer(ctx, serverID, serverName)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to rename server %s: %w", serverID, err))
 	}
 
 	if err := d.Set("ip", ip); err != nil {
@@ -121,7 +115,7 @@ func resourceOSRescueCreate(
 		return diag.FromErr(fmt.Errorf("error setting ssh_password attribute: %w", err))
 	}
 
-	d.SetId(serverNumber)
+	d.SetId(serverID)
 
 	return nil
 }
@@ -137,22 +131,17 @@ func resourceOSRescueUpdate(
 	}
 
 	serverName := d.Get("server_name").(string)
-	serverNumber := d.Get("server_number").(string)
-
-	serverID, err := strconv.Atoi(serverNumber)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid server ID %s: %w", serverNumber, err))
-	}
+	serverID := d.Get("server_id").(string)
 
 	serverInfo, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("failed to fetch server %d info: %w", serverID, err))
+		return diag.FromErr(fmt.Errorf("failed to fetch server %s info: %w", serverID, err))
 	}
 
 	if serverName != serverInfo.ServerName {
 		_, err := hClient.RenameServer(ctx, serverID, serverName)
 		if err != nil {
-			return diag.FromErr(fmt.Errorf("failed to rename server %d: %w", serverID, err))
+			return diag.FromErr(fmt.Errorf("failed to rename server %s: %w", serverID, err))
 		}
 	}
 

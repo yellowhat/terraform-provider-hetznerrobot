@@ -13,24 +13,24 @@ import (
 func TestRunConcurrentTasks(t *testing.T) {
 	tests := []struct {
 		name     string
-		ids      []int
-		worker   func(ctx context.Context, id int) error
+		ids      []string
+		worker   func(ctx context.Context, id string) error
 		wantErrs []string
 	}{
 		{
 			name: "All success",
-			ids:  []int{1, 2, 3, 4, 5},
-			worker: func(ctx context.Context, id int) error {
+			ids:  []string{"1", "2", "3", "4", "5"},
+			worker: func(ctx context.Context, id string) error {
 				return nil
 			},
 			wantErrs: nil,
 		},
 		{
 			name: "Some failures",
-			ids:  []int{1, 2, 3, 4, 5},
-			worker: func(ctx context.Context, id int) error {
-				if id == 2 || id == 4 {
-					return fmt.Errorf("failed for id: %d", id)
+			ids:  []string{"1", "2", "3", "4", "5"},
+			worker: func(ctx context.Context, id string) error {
+				if id == "2" || id == "4" {
+					return fmt.Errorf("failed for id: %s", id)
 				}
 				return nil
 			},
@@ -57,49 +57,6 @@ func TestRunConcurrentTasks(t *testing.T) {
 				if !strings.Contains(err.Error(), wantErr) {
 					t.Errorf("expected error but got nil %s %s", err, wantErr)
 				}
-			}
-		})
-	}
-}
-
-func TestIntSliceToString(t *testing.T) {
-	tests := []struct {
-		name string
-		ints []int
-		want string
-	}{
-		{
-			name: "Empty slice",
-			ints: []int{},
-			want: "",
-		},
-		{
-			name: "Single element",
-			ints: []int{42},
-			want: "42",
-		},
-		{
-			name: "Multiple elements",
-			ints: []int{1, 2, 3},
-			want: "1-2-3",
-		},
-		{
-			name: "Negative values",
-			ints: []int{-5, 0, 5},
-			want: "-5-0-5",
-		},
-		{
-			name: "Unordered",
-			ints: []int{3, 2, 1},
-			want: "3-2-1",
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := helpers.IntSliceToString(tc.ints)
-			if got != tc.want {
-				t.Errorf("IntSliceToString(%v) = %q; want %q", tc.ints, got, tc.want)
 			}
 		})
 	}

@@ -3,14 +3,13 @@ package helpers
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 )
 
 func RunConcurrentTasks(
 	ctx context.Context,
-	ids []int,
-	worker func(ctx context.Context, id int) error,
+	ids []string,
+	worker func(ctx context.Context, id string) error,
 ) error {
 	var (
 		wg   sync.WaitGroup
@@ -20,7 +19,7 @@ func RunConcurrentTasks(
 	sem := make(chan struct{}, 10)
 	for _, id := range ids {
 		wg.Add(1)
-		go func(id int) {
+		go func(id string) {
 			defer wg.Done()
 			sem <- struct{}{}
 			err := worker(ctx, id)
@@ -40,12 +39,4 @@ func RunConcurrentTasks(
 	}
 
 	return nil
-}
-
-func IntSliceToString(ints []int) string {
-	out := make([]string, len(ints))
-	for i, v := range ints {
-		out[i] = fmt.Sprintf("%d", v)
-	}
-	return strings.Join(out, "-")
 }

@@ -107,12 +107,8 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 	}
 
 	id := d.Id()
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid vSwitch ID %d: %w", idInt, err))
-	}
 
-	vsw, err := hClient.FetchVSwitchByID(ctx, idInt)
+	vsw, err := hClient.FetchVSwitchByID(ctx, id)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
@@ -157,10 +153,6 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	id := d.Id()
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("invalid vSwitch ID %d: %w", idInt, err))
-	}
 	name := d.Get("name").(string)
 	vlan := d.Get("vlan").(int)
 
@@ -203,7 +195,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, idInt, 20, 15*time.Second); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id, 20, 15*time.Second); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)

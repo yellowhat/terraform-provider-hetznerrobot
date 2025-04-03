@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
-	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 // DataSourceType is the type name of the Hetzner Robot Server resource.
@@ -51,9 +51,9 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	rawIDs := d.Get("ids").([]any)
-	ids := make([]int, 0, len(rawIDs))
+	ids := make([]string, 0, len(rawIDs))
 	for _, v := range rawIDs {
-		ids = append(ids, v.(int))
+		ids = append(ids, v.(string))
 	}
 
 	var (
@@ -93,7 +93,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 
 	idStr := "all"
 	if len(ids) > 0 {
-		idStr = helpers.IntSliceToString(ids)
+		idStr = strings.Join(ids, "-")
 	}
 
 	d.SetId(fmt.Sprintf("servers-%s", idStr))

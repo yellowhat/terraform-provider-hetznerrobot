@@ -48,9 +48,9 @@ type VSwitchCloudNet struct {
 
 func (c *HetznerRobotClient) FetchVSwitchByID(
 	ctx context.Context,
-	id int,
+	id string,
 ) (VSwitch, error) {
-	resp, err := c.DoRequest(ctx, "GET", fmt.Sprintf("/vswitch/%d", id), nil, "")
+	resp, err := c.DoRequest(ctx, "GET", fmt.Sprintf("/vswitch/%s", id), nil, "")
 	if err != nil {
 		return VSwitch{}, fmt.Errorf("error fetching VSwitch: %w", err)
 	}
@@ -77,13 +77,13 @@ func (c *HetznerRobotClient) FetchVSwitchByID(
 
 func (c *HetznerRobotClient) FetchVSwitchesByIDs(
 	ctx context.Context,
-	ids []int,
+	ids []string,
 ) ([]VSwitch, error) {
 	var (
 		mu        sync.Mutex
 		vswitches []VSwitch
 	)
-	f := func(ctx context.Context, id int) error {
+	f := func(ctx context.Context, id string) error {
 		vswitch, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error vSwitch fetching: %v", err)
@@ -315,7 +315,7 @@ func isVSwitchReady(servers []VSwitchServer) bool {
 
 func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
-	id int,
+	id string,
 	maxRetries int,
 	waitTime time.Duration,
 ) error {
@@ -332,5 +332,5 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 		time.Sleep(waitTime)
 	}
 
-	return fmt.Errorf("timeout waiting for vSwitch %d to become ready", id)
+	return fmt.Errorf("timeout waiting for vSwitch %s to become ready", id)
 }
