@@ -6,15 +6,16 @@ import (
 	"sync"
 )
 
-func RunConcurrentTasks(
+func RunConcurrentTasks[T any](
 	ctx context.Context,
 	ids []string,
-	worker func(ctx context.Context, id string) error,
-) error {
+	worker func(ctx context.Context, id string) (T, error),
+) ([]T, error) {
 	var (
-		wg   sync.WaitGroup
-		mu   sync.Mutex
-		errs []error
+		wg    sync.WaitGroup
+		mu    sync.Mutex
+		items []T
+		errs  []error
 	)
 	sem := make(chan struct{}, 10)
 	for _, id := range ids {
@@ -22,7 +23,7 @@ func RunConcurrentTasks(
 		go func(id string) {
 			defer wg.Done()
 			sem <- struct{}{}
-			err := worker(ctx, id)
+			item, err := worker(ctx, id)
 			<-sem
 			if err != nil {
 				mu.Lock()
@@ -30,13 +31,16 @@ func RunConcurrentTasks(
 				mu.Unlock()
 				return
 			}
+			mu.Lock()
+			items = append(items, item)
+			mu.Unlock()
 		}(id)
 	}
 	wg.Wait()
 
 	if len(errs) > 0 {
-		return fmt.Errorf("error fetching: %v", errs)
+		return nil, fmt.Errorf("error fetching: %v", errs)
 	}
 
-	return nil
+	return items, nil
 }

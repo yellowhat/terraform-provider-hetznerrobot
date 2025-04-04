@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
@@ -107,23 +106,7 @@ func (c *HetznerRobotClient) FetchServersByIDs(
 	ctx context.Context,
 	ids []string,
 ) ([]Server, error) {
-	var (
-		mu      sync.Mutex
-		servers []Server
-	)
-	f := func(ctx context.Context, id string) error {
-		server, err := c.FetchServerByID(ctx, id)
-		if err != nil {
-			return fmt.Errorf("error server fetching: %v", err)
-		}
-		mu.Lock()
-		servers = append(servers, server)
-		mu.Unlock()
-
-		return nil
-	}
-
-	err := helpers.RunConcurrentTasks(ctx, ids, f)
+	servers, err := helpers.RunConcurrentTasks(ctx, ids, c.FetchServerByID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching Servers: %w", err)
 	}
