@@ -23,7 +23,7 @@ data "hetznerrobot_server" "main" {
 
 ### Optional
 
-- `ids` (List of Number)
+- `ids` (List of String)
 
 ### Read-Only
 

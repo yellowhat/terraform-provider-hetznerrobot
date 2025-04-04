@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
@@ -79,23 +78,7 @@ func (c *HetznerRobotClient) FetchVSwitchesByIDs(
 	ctx context.Context,
 	ids []string,
 ) ([]VSwitch, error) {
-	var (
-		mu        sync.Mutex
-		vswitches []VSwitch
-	)
-	f := func(ctx context.Context, id string) error {
-		vswitch, err := c.FetchVSwitchByID(ctx, id)
-		if err != nil {
-			return fmt.Errorf("error vSwitch fetching: %v", err)
-		}
-		mu.Lock()
-		vswitches = append(vswitches, vswitch)
-		mu.Unlock()
-
-		return nil
-	}
-
-	err := helpers.RunConcurrentTasks(ctx, ids, f)
+	vswitches, err := helpers.RunConcurrentTasks(ctx, ids, c.FetchVSwitchByID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching vSwitches: %w", err)
 	}
