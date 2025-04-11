@@ -2,6 +2,7 @@ package vswitch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -51,6 +52,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	idsInterface := d.Get("ids").([]any)
 	ids := make([]string, 0, len(idsInterface))
+
 	for _, id := range idsInterface {
 		ids = append(ids, id.(string))
 	}
@@ -73,7 +75,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if len(vswitches) == 0 {
-		return diag.FromErr(fmt.Errorf("no vSwitches found"))
+		return diag.FromErr(errors.New("no vSwitches found"))
 	}
 
 	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
@@ -85,7 +87,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		idStr = strings.Join(ids, "-")
 	}
 
-	d.SetId(fmt.Sprintf("vswitches-%s", idStr))
+	d.SetId("vswitches-" + idStr)
 
 	return nil
 }

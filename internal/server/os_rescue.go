@@ -89,6 +89,7 @@ func resourceOSRescueCreate(
 			fmt.Errorf("failed to enable rescue mode for server %s: %w", serverID, err),
 		)
 	}
+
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
@@ -151,10 +152,12 @@ func resourceOSRescueUpdate(
 func waitForSSH(ip string, timeout time.Duration, interval time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:22", ip), 5*time.Second)
+		conn, err := net.DialTimeout("tcp", ip+":22", 5*time.Second)
 		if err == nil {
 			_ = conn.Close()
+
 			fmt.Printf("[INFO] SSH is available on the server %s\n", ip)
+
 			return nil
 		}
 

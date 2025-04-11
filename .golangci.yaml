@@ -2,12 +2,50 @@
 version: "2"
 
 linters:
+  default: all
+  disable:
+    - varnamelen
+    - err113
+    # Duable, not now
+    - forcetypeassert
+  settings:
+    depguard:
+      rules:
+        main:
+          allow:
+            - $gostd  # All of go's standard library
+            - github.com/hashicorp/terraform-plugin-sdk/v2
+            - github.com/stretchr/testify/assert
+            - github.com/yellowhat/terraform-provider-hetznerrobot
+    exhaustruct:
+      exclude:
+        - "^net/http.Client$"
+        # terraform internals
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/diag.Diagnostic$"
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/plugin.ServeOpts$"
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.Provider$"
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.Resource$"
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.ResourceImporter$"
+        - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.Schema$"
+    tagliatelle:
+      # Hetzner uses camel casing
+      case:
+        rules:
+          json: snake
   exclusions:
     rules:
       # https://github.com/kisielk/errcheck/issues/101
       - source: "^\\s*defer\\s+"
         linters:
           - errcheck
+      # Long due to table tests
+      - source: "^func Test"
+        linters:
+          - funlen
+      # Long as it defines the resource schema
+      - source: "^func Resource"
+        linters:
+          - funlen
 
 formatters:
   enable:

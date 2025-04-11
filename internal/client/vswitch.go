@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 // VSwitch defines the body format for /vswitch requests.
@@ -86,7 +84,7 @@ func (c *HetznerRobotClient) FetchVSwitchesByIDs(
 	ctx context.Context,
 	ids []string,
 ) ([]VSwitch, error) {
-	vswitches, err := helpers.RunConcurrentTasks(ctx, ids, c.FetchVSwitchByID)
+	vswitches, err := runConcurrentTasks(ctx, ids, c.FetchVSwitchByID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching vSwitches: %w", err)
 	}

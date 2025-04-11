@@ -10,8 +10,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/helpers"
 )
 
 // Server defines the body format for /server requests.
@@ -84,7 +82,7 @@ func (c *HetznerRobotClient) FetchServersByIDs(
 	ctx context.Context,
 	ids []string,
 ) ([]Server, error) {
-	servers, err := helpers.RunConcurrentTasks(ctx, ids, c.FetchServerByID)
+	servers, err := runConcurrentTasks(ctx, ids, c.FetchServerByID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching Servers: %w", err)
 	}

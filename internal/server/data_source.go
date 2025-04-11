@@ -52,6 +52,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 
 	rawIDs := d.Get("ids").([]any)
 	ids := make([]string, 0, len(rawIDs))
+
 	for _, v := range rawIDs {
 		ids = append(ids, v.(string))
 	}
@@ -96,7 +97,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 		idStr = strings.Join(ids, "-")
 	}
 
-	d.SetId(fmt.Sprintf("servers-%s", idStr))
+	d.SetId("servers-" + idStr)
 
 	return nil
 }

@@ -3,6 +3,7 @@ package vswitch
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -74,6 +75,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to pick random free VLAN: %w", err))
 		}
+
 		chosenVLAN = freeVLAN
 		if err = d.Set("vlan", chosenVLAN); err != nil {
 			return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
@@ -87,6 +89,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	if servers, ok := d.GetOk("servers"); ok {
 		serverIDs := parseServerIDs(servers.([]any))
+
 		serverObjects := parseServerIDsToVSwitchServers(serverIDs)
 		if len(serverObjects) > 0 {
 			if err := hClient.AddVSwitchServers(ctx, strconv.Itoa(vsw.ID), serverObjects); err != nil {
@@ -123,11 +126,13 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
+
 	if err = d.Set("servers", servers); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
 	var incidents []string
+
 	for _, server := range vsw.Servers {
 		if server.Status == "failed" {
 			message := fmt.Sprintf(
@@ -227,12 +232,13 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	return nil
 }
 
-// helpers
+// helpers.
 func parseServerIDs(servers []any) []int {
 	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.(int))
 	}
+
 	return result
 }
 
@@ -241,6 +247,7 @@ func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
 	for _, id := range serverIDs {
 		servers = append(servers, client.VSwitchServer{ServerNumber: id})
 	}
+
 	return servers
 }
 
@@ -249,7 +256,9 @@ func flattenServers(servers []client.VSwitchServer) []int {
 	for _, s := range servers {
 		result = append(result, s.ServerNumber)
 	}
+
 	sort.Ints(result)
+
 	return result
 }
 
@@ -265,13 +274,15 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 	}
 
 	var free []int
+
 	for vlan := 4000; vlan <= 4091; vlan++ {
 		if !used[vlan] {
 			free = append(free, vlan)
 		}
 	}
+
 	if len(free) == 0 {
-		return 0, fmt.Errorf("no free VLAN in [4000..4091], all are taken")
+		return 0, errors.New("no free VLAN in [4000..4091], all are taken")
 	}
 
 	idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(free))))
@@ -289,6 +300,7 @@ func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {
 	for _, id := range oldList {
 		oldMap[id] = true
 	}
+
 	for _, id := range newList {
 		newMap[id] = true
 	}
