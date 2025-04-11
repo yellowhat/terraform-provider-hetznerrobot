@@ -1,3 +1,4 @@
+// Package firewall defines the firewall terraform resource.
 package firewall
 
 import (
@@ -17,6 +18,7 @@ const (
 	statusTrue   = "active"
 )
 
+// Resource defines the firewall terraform resource.
 func Resource() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceCreate,
@@ -218,7 +220,7 @@ func resourceFirewallImportState(
 ) ([]*schema.ResourceData, error) {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
-		return nil, fmt.Errorf("invalid client type")
+		return nil, fmt.Errorf("invalid client type: %t", ok)
 	}
 
 	serverID := d.Id()
@@ -254,9 +256,10 @@ func resourceFirewallImportState(
 	return []*schema.ResourceData{d}, nil
 }
 
-// Helper functions
+// Helper functions.
 func buildFirewallRules(ruleList []any) []client.FirewallRule {
 	rules := make([]client.FirewallRule, 0, len(ruleList))
+
 	for _, ruleMap := range ruleList {
 		ruleProps := ruleMap.(map[string]any)
 		rules = append(rules, client.FirewallRule{
@@ -270,6 +273,7 @@ func buildFirewallRules(ruleList []any) []client.FirewallRule {
 			Action:   ruleProps["action"].(string),
 		})
 	}
+
 	return rules
 }
 
@@ -287,5 +291,6 @@ func flattenFirewallRules(rules []client.FirewallRule) []map[string]any {
 			"action":    rule.Action,
 		})
 	}
+
 	return result
 }
