@@ -248,8 +248,15 @@ func parseServerIDs(servers []any) []int {
 
 func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
 	servers := make([]client.VSwitchServer, 0, len(serverIDs))
+
 	for _, id := range serverIDs {
-		servers = append(servers, client.VSwitchServer{ServerNumber: id})
+		server := client.VSwitchServer{
+			ServerNumber:  id,
+			ServerIP:      "",
+			ServerIPv6Net: "",
+			Status:        "",
+		}
+		servers = append(servers, server)
 	}
 
 	return servers
