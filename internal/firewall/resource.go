@@ -16,6 +16,8 @@ const (
 	// ResourceType is the type name of the Hetzner Robot Firewall resource.
 	ResourceType = "hetznerrobot_firewall"
 	statusTrue   = "active"
+	maxRetries   = 20
+	waitTime     = 15
 )
 
 // Resource defines the firewall terraform resource.
@@ -124,7 +126,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		WhitelistHetznerServices: d.Get("whitelist_hos").(bool),
 		Status:                   status,
 		Rules:                    client.FirewallRules{Input: rules},
-	}, 20, 15*time.Second)
+	}, maxRetries, waitTime*time.Second)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -203,7 +205,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 				},
 			},
 		},
-	}, 20, 15*time.Second)
+	}, maxRetries, waitTime*time.Second)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting firewall to allow all: %w", err))
 	}

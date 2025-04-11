@@ -11,14 +11,14 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// ResourceType is the type name of the Hetzner Robot OS Rescue resource.
-const ResourceOSRescueType = "hetznerrobot_os_rescue"
+const (
+	// ResourceOSRescueType is the type name of the Hetzner Robot OS Rescue resource.
+	ResourceOSRescueType = "hetznerrobot_os_rescue"
+	waitMin              = 3
+	retryAfterSec        = 10
+)
 
-type ServerInput struct {
-	ID   string
-	Name string
-}
-
+// ResourceOSRescue defines the os_rescue terraform resource.
 func ResourceOSRescue() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceOSRescueCreate,
@@ -99,7 +99,7 @@ func resourceOSRescueCreate(
 		)
 	}
 
-	if err := waitForSSH(ip, 3*time.Minute, 10*time.Second); err != nil {
+	if err := waitForSSH(ip, waitMin*time.Minute, retryAfterSec*time.Second); err != nil {
 		return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
 	}
 
@@ -150,22 +150,17 @@ func resourceOSRescueUpdate(
 }
 
 func waitForSSH(ip string, timeout time.Duration, interval time.Duration) error {
+	const waitTime = 5
+
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", ip+":22", 5*time.Second)
+		conn, err := net.DialTimeout("tcp", ip+":22", waitTime*time.Second)
 		if err == nil {
 			_ = conn.Close()
-
-			fmt.Printf("[INFO] SSH is available on the server %s\n", ip)
 
 			return nil
 		}
 
-		fmt.Printf(
-			"[WARN] Waiting for SSH on %s... Retrying in %v seconds\n",
-			ip,
-			interval.Seconds(),
-		)
 		time.Sleep(interval)
 	}
 

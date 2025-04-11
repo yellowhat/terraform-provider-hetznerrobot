@@ -15,9 +15,14 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// ResourceType is the type name of the Hetzner Robo vSwitch resource.
-const ResourceType = "hetznerrobot_vswitch"
+const (
+	// ResourceType is the type name of the Hetzner Robo vSwitch resource.
+	ResourceType = "hetznerrobot_vswitch"
+	maxRetries   = 20
+	waitTime     = 15
+)
 
+// Resource defines the vswitch terraform resource.
 func Resource() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceCreate,
@@ -139,7 +144,6 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 				"Server %d failed to connect. Please check in the Hetzner web interface.",
 				server.ServerNumber,
 			)
-			fmt.Println("[WARNING]", message)
 			incidents = append(incidents, message)
 		}
 	}
@@ -200,7 +204,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id, 20, 15*time.Second); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id, maxRetries, waitTime*time.Second); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
@@ -293,7 +297,7 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 	return free[idx.Int64()], nil
 }
 
-func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {
+func diffServers(oldList, newList []int) ([]int, []int) {
 	oldMap := make(map[int]bool)
 	newMap := make(map[int]bool)
 
@@ -305,11 +309,15 @@ func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {
 		newMap[id] = true
 	}
 
+	var toRemove []int
+
 	for id := range oldMap {
 		if !newMap[id] {
 			toRemove = append(toRemove, id)
 		}
 	}
+
+	var toAdd []int
 
 	for id := range newMap {
 		if !oldMap[id] {

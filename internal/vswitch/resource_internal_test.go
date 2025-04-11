@@ -7,6 +7,8 @@ import (
 )
 
 func TestDiffServers(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		name         string
 		oldList      []int
@@ -76,6 +78,8 @@ func TestDiffServers(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			toAdd, toRemove := diffServers(tc.oldList, tc.newList)
 			if !compareOutput(toAdd, tc.wantToAdd) {
 				t.Errorf("Test %s: toAdd = %v, want %v", tc.name, toAdd, tc.wantToAdd)

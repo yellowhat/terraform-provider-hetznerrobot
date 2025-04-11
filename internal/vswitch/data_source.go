@@ -1,3 +1,4 @@
+// Package vswitch defines the vswitch terraform datasource and resource.
 package vswitch
 
 import (
@@ -15,6 +16,7 @@ import (
 // DataSourceType is the type name of the Hetzner Robot vSwitch resource.
 const DataSourceType = "hetznerrobot_vswitch"
 
+// DataSource defines the vswitch terraform datasource.
 func DataSource() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceRead,

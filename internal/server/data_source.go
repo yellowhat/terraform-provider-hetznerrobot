@@ -1,3 +1,4 @@
+// Package server defines the server terraform datasource and resource.
 package server
 
 import (
@@ -13,6 +14,7 @@ import (
 // DataSourceType is the type name of the Hetzner Robot Server resource.
 const DataSourceType = "hetznerrobot_server"
 
+// DataSourceServers defines the servers terraform datasource.
 func DataSourceServers() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceServersRead,
