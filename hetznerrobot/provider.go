@@ -1,3 +1,4 @@
+// Package hetznerrobot provides the HetznerRobot Terraform provider.
 package hetznerrobot
 
 import (
@@ -11,6 +12,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
+// Provider provides the HetznerRobot Terraform provider.
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -50,24 +52,30 @@ func Provider() *schema.Provider {
 	}
 }
 
+// providerConfigure configures the HetznerRobot Terraform provider.
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
 	username := d.Get("username").(string)
 	password := d.Get("password").(string)
 	url := d.Get("url").(string)
+
 	if username == "" || password == "" {
 		diags = append(diags, diag.Diagnostic{
 			Severity: diag.Error,
 			Summary:  "Missing credentials",
 			Detail:   "Both username and password must be provided.",
 		})
+
 		return nil, diags
 	}
+
 	config := &client.ProviderConfig{
 		Username: username,
 		Password: password,
 		BaseURL:  url,
 	}
 	client := client.New(config)
+
 	return client, diags
 }

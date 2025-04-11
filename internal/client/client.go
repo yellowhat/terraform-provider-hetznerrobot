@@ -1,3 +1,4 @@
+// Package client provides a client for interacting with the Hetzner Robot API.
 package client
 
 import (
@@ -7,17 +8,20 @@ import (
 	"net/http"
 )
 
+// ProviderConfig provides a client for interacting with the Hetzner Robot API.
 type ProviderConfig struct {
 	Username string
 	Password string
 	BaseURL  string
 }
 
+// HetznerRobotClient represents the Hetzner Robot client.
 type HetznerRobotClient struct {
 	Config *ProviderConfig
 	Client *http.Client
 }
 
+// New creates a new Hetzner Robot client.
 func New(config *ProviderConfig) *HetznerRobotClient {
 	return &HetznerRobotClient{
 		Config: config,
@@ -25,6 +29,7 @@ func New(config *ProviderConfig) *HetznerRobotClient {
 	}
 }
 
+// DoRequest executes a request to the Hetzner Robot API.
 func (c *HetznerRobotClient) DoRequest(
 	ctx context.Context,
 	method string,
