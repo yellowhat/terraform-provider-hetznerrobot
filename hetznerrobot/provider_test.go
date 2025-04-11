@@ -11,12 +11,16 @@ import (
 )
 
 func TestProvider(t *testing.T) {
+	t.Parallel()
+
 	if err := hetznerrobot.Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
 
 func TestProvider_Resources(t *testing.T) {
+	t.Parallel()
+
 	provider := hetznerrobot.Provider()
 	expectedResources := []string{
 		firewall.ResourceType,
@@ -33,6 +37,8 @@ func TestProvider_Resources(t *testing.T) {
 }
 
 func TestProvider_DataSources(t *testing.T) {
+	t.Parallel()
+
 	provider := hetznerrobot.Provider()
 	expectedDataSources := []string{
 		server.DataSourceType,

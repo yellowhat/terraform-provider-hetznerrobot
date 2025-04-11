@@ -11,6 +11,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
+// Provider provides the HetznerRobot Terraform provider.
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -50,6 +51,7 @@ func Provider() *schema.Provider {
 	}
 }
 
+// providerConfigure configures the HetznerRobot Terraform provider.
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	username := d.Get("username").(string)
