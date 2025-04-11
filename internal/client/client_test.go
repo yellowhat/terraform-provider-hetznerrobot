@@ -20,41 +20,60 @@ const (
 )
 
 func setupMockServer(t *testing.T) *httptest.Server {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := fmt.Sprintf("%s:%s", testUsername, testPassword)
-		wantAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+	t.Helper()
 
-		authHeader := r.Header.Get("Authorization")
-		if authHeader != wantAuth {
-			w.WriteHeader(http.StatusUnauthorized)
-			if _, err := fmt.Fprintln(w, "Unauthorized"); err != nil {
+	server := httptest.NewServer(
+		http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			auth := fmt.Sprintf("%s:%s", testUsername, testPassword)
+			wantAuth := "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+
+			authHeader := request.Header.Get("Authorization")
+			if authHeader != wantAuth {
+				writer.WriteHeader(http.StatusUnauthorized)
+
+				if _, err := fmt.Fprintln(writer, "Unauthorized"); err != nil {
+					t.Errorf("error writing response: %v", err)
+				}
+
+				return
+			}
+
+			contentType := request.Header.Get("Content-Type")
+
+			body, err := io.ReadAll(request.Body)
+			if err != nil {
+				writer.WriteHeader(http.StatusInternalServerError)
+
+				if _, err := fmt.Fprintln(writer, "Error reading request body"); err != nil {
+					t.Errorf("error writing response: %v", err)
+				}
+
+				return
+			}
+			defer request.Body.Close()
+
+			writer.WriteHeader(http.StatusOK)
+
+			_, err = fmt.Fprintf(
+				writer,
+				"Mock %s %s %s %s",
+				request.Method,
+				request.URL.Path,
+				contentType,
+				body,
+			)
+			if err != nil {
 				t.Errorf("error writing response: %v", err)
 			}
-			return
-		}
+		}),
+	)
 
-		contentType := r.Header.Get("Content-Type")
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			if _, err := fmt.Fprintln(w, "Error reading request body"); err != nil {
-				t.Errorf("error writing response: %v", err)
-			}
-			return
-		}
-		defer r.Body.Close()
-
-		w.WriteHeader(http.StatusOK)
-		_, err = fmt.Fprintf(w, "Mock %s %s %s %s", r.Method, r.URL.Path, contentType, body)
-		if err != nil {
-			t.Errorf("error writing response: %v", err)
-		}
-	}))
 	return server
 }
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	config := &client.ProviderConfig{
 		Username: testUsername,
 		Password: testPassword,
@@ -77,6 +96,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestDoRequest(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		name        string
 		method      string
@@ -90,12 +111,14 @@ func TestDoRequest(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:     "GET success",
-			method:   "GET",
-			path:     "/",
-			username: testUsername,
-			password: testPassword,
-			wantCode: http.StatusOK,
+			name:        "GET success",
+			method:      "GET",
+			path:        "/",
+			body:        "",
+			contentType: "",
+			username:    testUsername,
+			password:    testPassword,
+			wantCode:    http.StatusOK,
 		},
 		{
 			name:        "POST success",
@@ -108,23 +131,31 @@ func TestDoRequest(t *testing.T) {
 			wantCode:    http.StatusOK,
 		},
 		{
-			name:     "GET wrong username",
-			method:   "GET",
-			username: "wrongUser",
-			password: testPassword,
-			wantCode: http.StatusUnauthorized,
+			name:        "GET wrong username",
+			method:      "GET",
+			path:        "",
+			body:        "",
+			contentType: "",
+			username:    "wrongUser",
+			password:    testPassword,
+			wantCode:    http.StatusUnauthorized,
 		},
 		{
-			name:     "GET wrong password",
-			method:   "GET",
-			username: testUsername,
-			password: "wrongPass",
-			wantCode: http.StatusUnauthorized,
+			name:        "GET wrong password",
+			method:      "GET",
+			path:        "",
+			body:        "",
+			contentType: "",
+			username:    testUsername,
+			password:    "wrongPass",
+			wantCode:    http.StatusUnauthorized,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			server := setupMockServer(t)
 			defer server.Close()
 
@@ -138,7 +169,8 @@ func TestDoRequest(t *testing.T) {
 
 			ctx := context.Background()
 
-			reqBody := bytes.NewBuffer([]byte(tc.body))
+			reqBody := bytes.NewBufferString(tc.body)
+
 			resp, err := client.DoRequest(ctx, tc.method, tc.path, reqBody, tc.contentType)
 			if err != nil {
 				t.Errorf("DoRequest() errored: %v", err)

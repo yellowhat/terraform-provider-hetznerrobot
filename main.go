@@ -1,3 +1,4 @@
+// Package main is the entrypoint for the Hetzner Robot terraform provider.
 package main
 
 import (

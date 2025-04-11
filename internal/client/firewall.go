@@ -7,10 +7,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
 
+// Firewall defines the body format for /firewall requests.
 type Firewall struct {
 	IP                       string        `json:"ip"`
 	WhitelistHetznerServices bool          `json:"whitelist_hos"`
@@ -18,10 +20,12 @@ type Firewall struct {
 	Rules                    FirewallRules `json:"rules"`
 }
 
+// FirewallRules defines the firewall rules for Firewall.
 type FirewallRules struct {
 	Input []FirewallRule `json:"input"`
 }
 
+// FirewallRule defines a firewall rule for FirewallRules.
 type FirewallRule struct {
 	Name     string `json:"name,omitempty"`
 	SrcIP    string `json:"src_ip,omitempty"`
@@ -33,16 +37,20 @@ type FirewallRule struct {
 	Action   string `json:"action"`
 }
 
+// FirewallResponse defines the response from /firewall.
 type FirewallResponse struct {
 	Firewall Firewall `json:"firewall"`
 }
 
+// GetFirewall returns info about from a server ip.
 func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firewall, error) {
-	path := fmt.Sprintf("/firewall/%s", ip)
+	path := "/firewall/" + ip
+
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get firewall: %w", err)
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
@@ -50,6 +58,7 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 		if err != nil {
 			return nil, fmt.Errorf("unable to read response body: %w", err)
 		}
+
 		return nil, fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, data)
 	}
 
@@ -61,41 +70,38 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	return &fwResp.Firewall, nil
 }
 
+// SetFirewall sets firewall rules for a server ip.
 func (c *HetznerRobotClient) SetFirewall(
 	ctx context.Context,
 	firewall Firewall,
 	maxRetries int,
 	waitTime time.Duration,
 ) error {
-	path := fmt.Sprintf("/firewall/%s", firewall.IP)
+	path := "/firewall/" + firewall.IP
 
 	data := url.Values{}
-	data.Set("whitelist_hos", fmt.Sprintf("%t", firewall.WhitelistHetznerServices))
+	data.Set("whitelist_hos", strconv.FormatBool(firewall.WhitelistHetznerServices))
 	data.Set("status", firewall.Status)
 
 	for index, rule := range firewall.Rules.Input {
 		data.Set(fmt.Sprintf("rules[input][%d][ip_version]", index), "ipv4")
-		if rule.Name != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][name]", index), rule.Name)
+
+		fields := map[string]string{
+			"name":      rule.Name,
+			"src_ip":    rule.SrcIP,
+			"src_port":  rule.SrcPort,
+			"dst_ip":    rule.DstIP,
+			"dst_port":  rule.DstPort,
+			"protocol":  rule.Protocol,
+			"tcp_flags": rule.TCPFlags,
 		}
-		if rule.SrcIP != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][src_ip]", index), rule.SrcIP)
+
+		for key, value := range fields {
+			if value != "" {
+				data.Set(fmt.Sprintf("rules[input][%d][%s]", index, key), value)
+			}
 		}
-		if rule.SrcPort != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][src_port]", index), rule.SrcPort)
-		}
-		if rule.DstIP != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_ip]", index), rule.DstIP)
-		}
-		if rule.DstPort != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][dst_port]", index), rule.DstPort)
-		}
-		if rule.Protocol != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][protocol]", index), rule.Protocol)
-		}
-		if rule.TCPFlags != "" {
-			data.Set(fmt.Sprintf("rules[input][%d][tcp_flags]", index), rule.TCPFlags)
-		}
+
 		data.Set(fmt.Sprintf("rules[input][%d][action]", index), rule.Action)
 	}
 
@@ -116,6 +122,7 @@ func (c *HetznerRobotClient) SetFirewall(
 		if err != nil {
 			return fmt.Errorf("unable to read response body: %w", err)
 		}
+
 		return fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, data)
 	}
 
@@ -128,20 +135,18 @@ func (c *HetznerRobotClient) waitForFirewallActive(
 	maxRetries int,
 	waitTime time.Duration,
 ) error {
-	for i := range maxRetries {
+	for range maxRetries {
 		firewall, err := c.GetFirewall(ctx, ip)
 		if err != nil {
 			return fmt.Errorf("error checking firewall status: %w", err)
 		}
 
 		if firewall.Status == "active" {
-			fmt.Println("Firewall is now active.")
 			return nil
 		}
 
-		fmt.Printf("Waiting for firewall to become active... (%d/%d)\n", i+1, maxRetries)
 		time.Sleep(waitTime)
 	}
 
-	return fmt.Errorf("timeout waiting for firewall to become active")
+	return fmt.Errorf("timeout waiting for firewall to become active on ip: %s", ip)
 }
