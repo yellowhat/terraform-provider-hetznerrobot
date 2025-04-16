@@ -180,24 +180,8 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if d.HasChange("servers") {
-		oldRaw, newRaw := d.GetChange("servers")
-		oldServers := parseServerIDs(oldRaw.([]any))
-		newServers := parseServerIDs(newRaw.([]any))
-
-		toAdd, toRemove := diffServers(oldServers, newServers)
-
-		if len(toRemove) > 0 {
-			removeObjects := parseServerIDsToVSwitchServers(toRemove)
-			if err := hClient.RemoveVSwitchServers(ctx, id, removeObjects); err != nil {
-				return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
-			}
-		}
-
-		if len(toAdd) > 0 {
-			addObjects := parseServerIDsToVSwitchServers(toAdd)
-			if err := hClient.AddVSwitchServers(ctx, id, addObjects); err != nil {
-				return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
-			}
+		if err := manageServers(ctx, d, hClient, id); err != nil {
+			return err
 		}
 
 		waitForReady = true
@@ -212,6 +196,35 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	return resourceRead(ctx, d, meta)
+}
+
+func manageServers(
+	ctx context.Context,
+	d *schema.ResourceData,
+	hClient *client.HetznerRobotClient,
+	id string,
+) diag.Diagnostics {
+	oldRaw, newRaw := d.GetChange("servers")
+	oldServers := parseServerIDs(oldRaw.([]any))
+	newServers := parseServerIDs(newRaw.([]any))
+
+	toAdd, toRemove := diffServers(oldServers, newServers)
+
+	if len(toRemove) > 0 {
+		removeObjects := parseServerIDsToVSwitchServers(toRemove)
+		if err := hClient.RemoveVSwitchServers(ctx, id, removeObjects); err != nil {
+			return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
+		}
+	}
+
+	if len(toAdd) > 0 {
+		addObjects := parseServerIDsToVSwitchServers(toAdd)
+		if err := hClient.AddVSwitchServers(ctx, id, addObjects); err != nil {
+			return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
+		}
+	}
+
+	return nil
 }
 
 func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
