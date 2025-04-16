@@ -46,6 +46,10 @@ linters:
       - source: "^func Resource"
         linters:
           - funlen
+      # High cyclomatic complexity due to table test
+      - source: "^func Test"
+        linters:
+          - cyclop
 
 formatters:
   enable:
