@@ -1,7 +1,9 @@
+// Package vswitch defines the vswitch terraform datasource and resource.
 package vswitch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,6 +16,7 @@ import (
 // DataSourceType is the type name of the Hetzner Robot vSwitch resource.
 const DataSourceType = "hetznerrobot_vswitch"
 
+// DataSource defines the vswitch terraform datasource.
 func DataSource() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceRead,
@@ -51,6 +54,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	idsInterface := d.Get("ids").([]any)
 	ids := make([]string, 0, len(idsInterface))
+
 	for _, id := range idsInterface {
 		ids = append(ids, id.(string))
 	}
@@ -73,7 +77,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if len(vswitches) == 0 {
-		return diag.FromErr(fmt.Errorf("no vSwitches found"))
+		return diag.FromErr(errors.New("no vSwitches found"))
 	}
 
 	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
@@ -85,7 +89,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		idStr = strings.Join(ids, "-")
 	}
 
-	d.SetId(fmt.Sprintf("vswitches-%s", idStr))
+	d.SetId("vswitches-" + idStr)
 
 	return nil
 }

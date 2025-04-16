@@ -3,6 +3,7 @@ package vswitch
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 	"sort"
@@ -14,9 +15,14 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// ResourceType is the type name of the Hetzner Robo vSwitch resource.
-const ResourceType = "hetznerrobot_vswitch"
+const (
+	// ResourceType is the type name of the Hetzner Robo vSwitch resource.
+	ResourceType = "hetznerrobot_vswitch"
+	maxRetries   = 20
+	waitTime     = 15
+)
 
+// Resource defines the vswitch terraform resource.
 func Resource() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceCreate,
@@ -74,6 +80,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to pick random free VLAN: %w", err))
 		}
+
 		chosenVLAN = freeVLAN
 		if err = d.Set("vlan", chosenVLAN); err != nil {
 			return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
@@ -87,6 +94,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	if servers, ok := d.GetOk("servers"); ok {
 		serverIDs := parseServerIDs(servers.([]any))
+
 		serverObjects := parseServerIDsToVSwitchServers(serverIDs)
 		if len(serverObjects) > 0 {
 			if err := hClient.AddVSwitchServers(ctx, strconv.Itoa(vsw.ID), serverObjects); err != nil {
@@ -123,18 +131,19 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
+
 	if err = d.Set("servers", servers); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
 	var incidents []string
+
 	for _, server := range vsw.Servers {
 		if server.Status == "failed" {
 			message := fmt.Sprintf(
 				"Server %d failed to connect. Please check in the Hetzner web interface.",
 				server.ServerNumber,
 			)
-			fmt.Println("[WARNING]", message)
 			incidents = append(incidents, message)
 		}
 	}
@@ -171,31 +180,15 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if d.HasChange("servers") {
-		oldRaw, newRaw := d.GetChange("servers")
-		oldServers := parseServerIDs(oldRaw.([]any))
-		newServers := parseServerIDs(newRaw.([]any))
-
-		toAdd, toRemove := diffServers(oldServers, newServers)
-
-		if len(toRemove) > 0 {
-			removeObjects := parseServerIDsToVSwitchServers(toRemove)
-			if err := hClient.RemoveVSwitchServers(ctx, id, removeObjects); err != nil {
-				return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
-			}
-		}
-
-		if len(toAdd) > 0 {
-			addObjects := parseServerIDsToVSwitchServers(toAdd)
-			if err := hClient.AddVSwitchServers(ctx, id, addObjects); err != nil {
-				return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
-			}
+		if err := manageServers(ctx, d, hClient, id); err != nil {
+			return err
 		}
 
 		waitForReady = true
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id, 20, 15*time.Second); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id, maxRetries, waitTime*time.Second); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
@@ -203,6 +196,35 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	return resourceRead(ctx, d, meta)
+}
+
+func manageServers(
+	ctx context.Context,
+	d *schema.ResourceData,
+	hClient *client.HetznerRobotClient,
+	id string,
+) diag.Diagnostics {
+	oldRaw, newRaw := d.GetChange("servers")
+	oldServers := parseServerIDs(oldRaw.([]any))
+	newServers := parseServerIDs(newRaw.([]any))
+
+	toAdd, toRemove := diffServers(oldServers, newServers)
+
+	if len(toRemove) > 0 {
+		removeObjects := parseServerIDsToVSwitchServers(toRemove)
+		if err := hClient.RemoveVSwitchServers(ctx, id, removeObjects); err != nil {
+			return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
+		}
+	}
+
+	if len(toAdd) > 0 {
+		addObjects := parseServerIDsToVSwitchServers(toAdd)
+		if err := hClient.AddVSwitchServers(ctx, id, addObjects); err != nil {
+			return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
+		}
+	}
+
+	return nil
 }
 
 func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
@@ -227,20 +249,29 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	return nil
 }
 
-// helpers
+// helpers.
 func parseServerIDs(servers []any) []int {
 	result := make([]int, 0, len(servers))
 	for _, s := range servers {
 		result = append(result, s.(int))
 	}
+
 	return result
 }
 
 func parseServerIDsToVSwitchServers(serverIDs []int) []client.VSwitchServer {
 	servers := make([]client.VSwitchServer, 0, len(serverIDs))
+
 	for _, id := range serverIDs {
-		servers = append(servers, client.VSwitchServer{ServerNumber: id})
+		server := client.VSwitchServer{
+			ServerNumber:  id,
+			ServerIP:      "",
+			ServerIPv6Net: "",
+			Status:        "",
+		}
+		servers = append(servers, server)
 	}
+
 	return servers
 }
 
@@ -249,7 +280,9 @@ func flattenServers(servers []client.VSwitchServer) []int {
 	for _, s := range servers {
 		result = append(result, s.ServerNumber)
 	}
+
 	sort.Ints(result)
+
 	return result
 }
 
@@ -265,13 +298,15 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 	}
 
 	var free []int
+
 	for vlan := 4000; vlan <= 4091; vlan++ {
 		if !used[vlan] {
 			free = append(free, vlan)
 		}
 	}
+
 	if len(free) == 0 {
-		return 0, fmt.Errorf("no free VLAN in [4000..4091], all are taken")
+		return 0, errors.New("no free VLAN in [4000..4091], all are taken")
 	}
 
 	idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(free))))
@@ -282,22 +317,27 @@ func pickRandomFreeVLAN(ctx context.Context, c *client.HetznerRobotClient) (int,
 	return free[idx.Int64()], nil
 }
 
-func diffServers(oldList, newList []int) (toAdd []int, toRemove []int) {
+func diffServers(oldList, newList []int) ([]int, []int) {
 	oldMap := make(map[int]bool)
 	newMap := make(map[int]bool)
 
 	for _, id := range oldList {
 		oldMap[id] = true
 	}
+
 	for _, id := range newList {
 		newMap[id] = true
 	}
+
+	var toRemove []int
 
 	for id := range oldMap {
 		if !newMap[id] {
 			toRemove = append(toRemove, id)
 		}
 	}
+
+	var toAdd []int
 
 	for id := range newMap {
 		if !oldMap[id] {

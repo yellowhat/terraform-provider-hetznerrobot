@@ -1,4 +1,4 @@
-package helpers
+package client
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-func RunConcurrentTasks[T any](
+func runConcurrentTasks[T any](
 	ctx context.Context,
 	ids []string,
 	worker func(ctx context.Context, id string) (T, error),
@@ -17,25 +17,35 @@ func RunConcurrentTasks[T any](
 		items []T
 		errs  []error
 	)
-	sem := make(chan struct{}, 10)
+
+	const maxConcurrent = 10
+	sem := make(chan struct{}, maxConcurrent)
+
 	for _, id := range ids {
 		wg.Add(1)
+
 		go func(id string) {
 			defer wg.Done()
 			sem <- struct{}{}
+
 			item, err := worker(ctx, id)
+
 			<-sem
+
 			if err != nil {
 				mu.Lock()
 				errs = append(errs, err)
 				mu.Unlock()
+
 				return
 			}
+
 			mu.Lock()
 			items = append(items, item)
 			mu.Unlock()
 		}(id)
 	}
+
 	wg.Wait()
 
 	if len(errs) > 0 {

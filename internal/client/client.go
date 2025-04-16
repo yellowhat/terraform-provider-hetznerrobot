@@ -48,6 +48,7 @@ func (c *HetznerRobotClient) DoRequest(
 	}
 
 	req.SetBasicAuth(c.Config.Username, c.Config.Password)
+
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
 	}
