@@ -103,7 +103,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		}
 	}
 
-	err = hClient.WaitForVSwitchReady(ctx, id, maxRetries, waitTime*time.Second)
+	err = hClient.WaitForVSwitchReady(ctx, strconv.Itoa(vsw.ID), maxRetries, waitTime*time.Second)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after update: %w", err))
 	}
