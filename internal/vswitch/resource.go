@@ -103,6 +103,11 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		}
 	}
 
+	err = hClient.WaitForVSwitchReady(ctx, strconv.Itoa(vsw.ID), maxRetries, waitTime*time.Second)
+	if err != nil {
+		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
+	}
+
 	d.SetId(strconv.Itoa(vsw.ID))
 
 	return resourceRead(ctx, d, meta)
