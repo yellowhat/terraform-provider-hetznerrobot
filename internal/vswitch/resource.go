@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	// ResourceType is the type name of the Hetzner Robo vSwitch resource.
-	ResourceType = "hetznerrobot_vswitch"
-	maxRetries   = 20
-	waitTime     = 15
+	// ResourceType is the type name of the Hetzner Robot vSwitch resource.
+	ResourceType   = "hetznerrobot_vswitch"
+	waitMaxRetries = 20
+	waitTime       = 15
 )
 
 // Resource defines the vswitch terraform resource.
@@ -92,18 +92,20 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.FromErr(fmt.Errorf("error creating vSwitch: %w", err))
 	}
 
+	vswID := strconv.Itoa(vsw.ID)
+
 	if servers, ok := d.GetOk("servers"); ok {
 		serverIDs := parseServerIDs(servers.([]any))
 
 		serverObjects := parseServerIDsToVSwitchServers(serverIDs)
 		if len(serverObjects) > 0 {
-			if err := hClient.AddVSwitchServers(ctx, strconv.Itoa(vsw.ID), serverObjects); err != nil {
+			if err := hClient.AddVSwitchServers(ctx, vswID, serverObjects); err != nil {
 				return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 			}
 		}
 	}
 
-	err = hClient.WaitForVSwitchReady(ctx, strconv.Itoa(vsw.ID), maxRetries, waitTime*time.Second)
+	err = hClient.WaitForVSwitchReady(ctx, vswID, waitMaxRetries, waitTime*time.Second)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
 	}
@@ -193,7 +195,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id, maxRetries, waitTime*time.Second); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id, waitMaxRetries, waitTime*time.Second); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
