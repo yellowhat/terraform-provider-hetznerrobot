@@ -273,7 +273,7 @@ func (c *HetznerRobotClient) AddVSwitchServers(
 	return nil
 }
 
-// RemoveVSwitchServers removes a server to a vSwitch.
+// RemoveVSwitchServers removes servers attached to a vSwitch.
 func (c *HetznerRobotClient) RemoveVSwitchServers(
 	ctx context.Context,
 	id string,

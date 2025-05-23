@@ -1,8 +1,8 @@
 .DEFAULT_GOAL := help
 # renovate: datasource=docker depName=docker.io/golang
-GOLANG_VER = 1.24.1
+GOLANG_VER = 1.24.3
 # renovate: datasource=github-releases depName=hashicorp/terraform
-TERRAFORM_VER = 1.11.2
+TERRAFORM_VER = 1.12.1
 
 .PHONY: it
 it: ## Start interactive go container
@@ -11,7 +11,7 @@ it: ## Start interactive go container
 		--tty \
 		--rm \
 		--publish 9090:9090 \
-		--volume "${PWD}:/data:z" \
+		--volume .:/data:z \
 		--workdir /data \
 		"docker.io/golang:$(GOLANG_VER)"
 
@@ -21,7 +21,7 @@ docs: ## Generate docs
 		--interactive \
 		--tty \
 		--rm \
-		--volume "${PWD}:/data:z" \
+		--volume .:/data:z \
 		--workdir /data \
 		--entrypoint bash \
 		"docker.io/golang:$(GOLANG_VER)" -c " \
