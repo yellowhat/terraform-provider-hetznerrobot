@@ -1,4 +1,4 @@
-FROM docker.io/golang:1.24.1 AS build
+FROM docker.io/golang:1.24.3 AS build
 
 # Create statically linked executable
 ARG CGO_ENABLED=0
