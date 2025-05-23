@@ -101,12 +101,12 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.Errorf("invalid client type")
 	}
 
-	vswID := d.Id()
+	id := d.Id()
 
 	var waitForReady bool
 
 	if d.HasChange("servers") {
-		if err := manageServers(ctx, d, hClient, vswID); err != nil {
+		if err := manageServers(ctx, d, hClient, id); err != nil {
 			return err
 		}
 
@@ -114,7 +114,7 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, vswID, waitMaxRetries, waitDuration); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id, waitMaxRetries, waitDuration); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
