@@ -33,7 +33,7 @@ func ServersResource() *schema.Resource {
 				Type:        schema.TypeList,
 				Required:    true,
 				Description: "List of server IDs to attach to the vSwitch.",
-				Elem:        &schema.Schema{Type: schema.TypeString},
+				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
 		},
 	}
