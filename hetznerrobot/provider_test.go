@@ -26,6 +26,7 @@ func TestProvider_Resources(t *testing.T) {
 		firewall.ResourceType,
 		server.ResourceOSRescueType,
 		vswitch.ResourceType,
+		vswitch.ServersResourceType,
 	}
 
 	resources := provider.Resources()
