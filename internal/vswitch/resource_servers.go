@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -24,8 +25,8 @@ func ServersResource() *schema.Resource {
 		DeleteContext: resourceServersDelete,
 
 		Schema: map[string]*schema.Schema{
-			"vswitch_id": {
-				Type:        schema.TypeString,
+			"vlan_id": {
+				Type:        schema.TypeInt,
 				Required:    true,
 				Description: "The VLAN ID for the existing vSwitch.",
 			},
@@ -45,21 +46,23 @@ func resourceServersCreate(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.Errorf("invalid client type")
 	}
 
-	vSwitchID := d.Get("vswitch_id").(string)
+	vlan := d.Get("vlan_id").(int)
+	vlanID := strconv.Itoa(vlan)
+
 	servers := d.Get("servers")
 	serverIDs := parseServerIDs(servers.([]any))
 	serverObjs := parseServerIDsToVSwitchServers(serverIDs)
 
-	if err := hClient.AddVSwitchServers(ctx, vSwitchID, serverObjs); err != nil {
+	if err := hClient.AddVSwitchServers(ctx, vlanID, serverObjs); err != nil {
 		return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 	}
 
-	err := hClient.WaitForVSwitchReady(ctx, vSwitchID, waitMaxRetries, waitDuration)
+	err := hClient.WaitForVSwitchReady(ctx, vlanID, waitMaxRetries, waitDuration)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
 	}
 
-	d.SetId(vSwitchID)
+	d.SetId(vlanID)
 
 	return resourceServersRead(ctx, d, meta)
 }
@@ -70,14 +73,14 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diag.Errorf("invalid client type")
 	}
 
-	vSwitchID := d.Id()
+	vlanID := d.Id()
 
-	vsw, err := hClient.FetchVSwitchByID(ctx, vSwitchID)
+	vsw, err := hClient.FetchVSwitchByID(ctx, vlanID)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	if err = d.Set("vswitch_id", vsw.VLAN); err != nil {
+	if err = d.Set("vlan_id", vsw.VLAN); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
 	}
 
@@ -97,12 +100,12 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.Errorf("invalid client type")
 	}
 
-	vSwitchID := d.Id()
+	vlanID := d.Id()
 
 	var waitForReady bool
 
 	if d.HasChange("servers") {
-		if err := manageServers(ctx, d, hClient, vSwitchID); err != nil {
+		if err := manageServers(ctx, d, hClient, vlanID); err != nil {
 			return err
 		}
 
@@ -110,7 +113,7 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, vSwitchID, waitMaxRetries, waitDuration); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, vlanID, waitMaxRetries, waitDuration); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)

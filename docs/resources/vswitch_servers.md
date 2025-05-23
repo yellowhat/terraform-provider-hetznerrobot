@@ -14,7 +14,7 @@ description: |-
 
 ```terraform
 resource "hetznerrobot_vswitch_servers" "main" {
-  vlan    = 4000
+  vlan_id = 4000
   servers = ["1234567"]
 }
 ```
@@ -25,7 +25,7 @@ resource "hetznerrobot_vswitch_servers" "main" {
 ### Required
 
 - `servers` (List of String) List of server IDs to connect to the vSwitch.
-- `vswitch_id` (String) The VLAN ID for the existing vSwitch.
+- `vlan_id` (Number) The VLAN ID for the existing vSwitch.
 
 ### Read-Only
 
