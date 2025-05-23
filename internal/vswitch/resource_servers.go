@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -71,15 +72,17 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diag.Errorf("invalid client type")
 	}
 
-	vswID := d.Id()
+	id := d.Id()
 
-	vsw, err := hClient.FetchVSwitchByID(ctx, vswID)
+	vsw, err := hClient.FetchVSwitchByID(ctx, id)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	if err = d.Set("vswitch_id", vsw.ID); err != nil {
-		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
+	vswID := strconv.Itoa(vsw.ID)
+
+	if err = d.Set("vswitch_id", vswID); err != nil {
+		return diag.FromErr(fmt.Errorf("error setting vswitch_id attribute: %w", err))
 	}
 
 	servers := flattenServers(vsw.Servers)
