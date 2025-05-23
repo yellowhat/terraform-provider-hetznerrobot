@@ -78,7 +78,7 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	if err = d.Set("vswitch_id", vsw.VLAN); err != nil {
+	if err = d.Set("vswitch_id", vsw.ID); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
 	}
 
