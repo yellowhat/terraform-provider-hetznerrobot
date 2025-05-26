@@ -252,9 +252,9 @@ func (c *HetznerRobotClient) RebootServer(
 	}
 
 	if resetType == "power" || resetType == "power_long" {
-		const wait = 30
+		const waitDuration = 30 * time.Second
 		// Allow some time to power off
-		time.Sleep(wait * time.Second)
+		time.Sleep(waitDuration)
 
 		if err := c.powerOnServer(ctx, serverID, endpoint); err != nil {
 			return fmt.Errorf("unable to power on: %w", err)

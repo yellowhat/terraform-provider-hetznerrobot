@@ -4,7 +4,6 @@ package firewall
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -16,8 +15,6 @@ const (
 	// ResourceType is the type name of the Hetzner Robot Firewall resource.
 	ResourceType = "hetznerrobot_firewall"
 	statusTrue   = "active"
-	maxRetries   = 30
-	waitTime     = 20 * time.Second
 )
 
 // Resource defines the firewall terraform resource.
@@ -126,7 +123,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		WhitelistHetznerServices: d.Get("whitelist_hos").(bool),
 		Status:                   status,
 		Rules:                    client.FirewallRules{Input: rules},
-	}, maxRetries, waitTime)
+	})
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -205,7 +202,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 				},
 			},
 		},
-	}, maxRetries, waitTime)
+	})
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting firewall to allow all: %w", err))
 	}
