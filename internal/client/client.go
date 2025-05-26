@@ -29,6 +29,11 @@ func New(config *ProviderConfig) *HetznerRobotClient {
 	}
 }
 
+const (
+	waitMaxRetries = 60
+	waitDuration   = 20 * time.Second
+)
+
 // DoRequest executes a request to the Hetzner Robot API.
 func (c *HetznerRobotClient) DoRequest(
 	ctx context.Context,

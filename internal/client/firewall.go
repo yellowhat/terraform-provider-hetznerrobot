@@ -12,11 +12,6 @@ import (
 	"time"
 )
 
-const (
-	waitMaxRetries = 30
-	waitDuration   = 20 * time.Second
-)
-
 // Firewall defines the body format for /firewall requests.
 type Firewall struct {
 	IP                       string        `json:"ip"`
