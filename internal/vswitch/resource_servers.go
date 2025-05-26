@@ -56,7 +56,7 @@ func resourceServersCreate(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 	}
 
-	err := hClient.WaitForVSwitchReady(ctx, vswID, waitMaxRetries, waitDuration)
+	err := hClient.WaitForVSwitchReady(ctx, vswID)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
 	}
@@ -114,7 +114,7 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id, waitMaxRetries, waitDuration); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)

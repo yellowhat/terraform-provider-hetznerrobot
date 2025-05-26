@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+const (
+	waitMaxRetries = 30
+	waitDuration   = 20 * time.Second
+)
+
 // Firewall defines the body format for /firewall requests.
 type Firewall struct {
 	IP                       string        `json:"ip"`
@@ -74,8 +79,6 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 func (c *HetznerRobotClient) SetFirewall(
 	ctx context.Context,
 	firewall Firewall,
-	maxRetries int,
-	waitTime time.Duration,
 ) error {
 	path := "/firewall/" + firewall.IP
 
@@ -126,16 +129,14 @@ func (c *HetznerRobotClient) SetFirewall(
 		return fmt.Errorf("unexpected response status: %d, body: %s", resp.StatusCode, data)
 	}
 
-	return c.waitForFirewallActive(ctx, firewall.IP, maxRetries, waitTime)
+	return c.waitForFirewallActive(ctx, firewall.IP)
 }
 
 func (c *HetznerRobotClient) waitForFirewallActive(
 	ctx context.Context,
 	ip string,
-	maxRetries int,
-	waitTime time.Duration,
 ) error {
-	for range maxRetries {
+	for range waitMaxRetries {
 		firewall, err := c.GetFirewall(ctx, ip)
 		if err != nil {
 			return fmt.Errorf("error checking firewall status: %w", err)
@@ -145,7 +146,7 @@ func (c *HetznerRobotClient) waitForFirewallActive(
 			return nil
 		}
 
-		time.Sleep(waitTime)
+		time.Sleep(waitDuration)
 	}
 
 	return fmt.Errorf("timeout waiting for firewall to become active on ip: %s", ip)

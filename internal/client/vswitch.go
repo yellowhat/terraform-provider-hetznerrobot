@@ -327,10 +327,8 @@ func isVSwitchReady(servers []VSwitchServer) bool {
 func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
 	id string,
-	maxRetries int,
-	waitTime time.Duration,
 ) error {
-	for range maxRetries {
+	for range waitMaxRetries {
 		vsw, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)
@@ -340,7 +338,7 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 			return nil
 		}
 
-		time.Sleep(waitTime)
+		time.Sleep(waitDuration)
 	}
 
 	return fmt.Errorf("timeout waiting for vSwitch %s to become ready", id)

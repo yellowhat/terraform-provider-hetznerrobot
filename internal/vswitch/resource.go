@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"sort"
 	"strconv"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -17,9 +16,7 @@ import (
 
 const (
 	// ResourceType is the type name of the Hetzner Robot vSwitch resource.
-	ResourceType   = "hetznerrobot_vswitch"
-	waitMaxRetries = 30
-	waitDuration   = 20 * time.Second
+	ResourceType = "hetznerrobot_vswitch"
 )
 
 // Resource defines the vswitch terraform resource.
@@ -105,7 +102,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		}
 	}
 
-	err = hClient.WaitForVSwitchReady(ctx, vswID, waitMaxRetries, waitDuration)
+	err = hClient.WaitForVSwitchReady(ctx, vswID)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
 	}
@@ -195,7 +192,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id, waitMaxRetries, waitDuration); err != nil {
+		if err := hClient.WaitForVSwitchReady(ctx, id); err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
