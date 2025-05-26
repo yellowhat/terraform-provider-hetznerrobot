@@ -18,8 +18,8 @@ import (
 const (
 	// ResourceType is the type name of the Hetzner Robot vSwitch resource.
 	ResourceType   = "hetznerrobot_vswitch"
-	waitMaxRetries = 20
-	waitDuration   = 15 * time.Second
+	waitMaxRetries = 30
+	waitDuration   = 20 * time.Second
 )
 
 // Resource defines the vswitch terraform resource.
