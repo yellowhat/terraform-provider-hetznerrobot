@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+)
+
+const (
+	waitMaxRetries = 60
+	waitDuration   = 20 * time.Second
 )
 
 // ProviderConfig provides a client for interacting with the Hetzner Robot API.
@@ -28,11 +34,6 @@ func New(config *ProviderConfig) *HetznerRobotClient {
 		Client: &http.Client{},
 	}
 }
-
-const (
-	waitMaxRetries = 60
-	waitDuration   = 20 * time.Second
-)
 
 // DoRequest executes a request to the Hetzner Robot API.
 func (c *HetznerRobotClient) DoRequest(
