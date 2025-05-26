@@ -6,6 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+)
+
+const (
+	waitMaxRetries = 60
+	waitDuration   = 20 * time.Second
 )
 
 // ProviderConfig provides a client for interacting with the Hetzner Robot API.
