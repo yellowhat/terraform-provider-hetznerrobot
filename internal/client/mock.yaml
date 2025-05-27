@@ -1,0 +1,127 @@
+---
+openapi: 3.1.0
+info:
+  title: Robot Webservice API
+  description: API for managing servers, IPs, boot configurations, firewalls, and vSwitches.
+  version: 1.0.0
+
+security:
+  - basicAuth: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+
+  responses:
+    ErrorResponse:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            status:
+              type: integer
+            code:
+              type: string
+            message:
+              type: string
+            missing:
+              type: array
+              items:
+                type: string
+            invalid:
+              type: array
+              items:
+                type: string
+
+    Server:
+      type: object
+      properties:
+        server_ip:
+          type: string
+        server_ipv6_net:
+          type: string
+        server_number:
+          type: integer
+        server_name:
+          type: string
+        product:
+          type: string
+        dc:
+          type: string
+        traffic:
+          type: string
+        status:
+          type: string
+        cancelled:
+          type: boolean
+        paid_until:
+          type: string
+        ip:
+          type: array
+          items:
+            type: string
+        subnet:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subnet'
+        reset:
+          type: boolean
+        rescue:
+          type: boolean
+        vnc:
+          type: boolean
+        windows:
+          type: boolean
+        plesk:
+          type: boolean
+        cpanel:
+          type: boolean
+        wol:
+          type: boolean
+        hot_swap:
+          type: boolean
+        linked_storagebox:
+          type: integer
+
+    Subnet:
+      type: object
+      properties:
+        ip:
+          type: string
+        mask:
+          type: string
+
+paths:
+  /server:
+    get:
+      summary: Query data of all servers
+      operationId: getServers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Server'
+              example:
+                - server_number: 1
+                  server_name: server-1
+                - server_number: 2
+                  server_name: server-2
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+      security:
+        - basicAuth: []
