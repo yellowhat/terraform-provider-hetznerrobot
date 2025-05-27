@@ -91,9 +91,7 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diag.FromErr(fmt.Errorf("error setting vswitch_id attribute: %w", err))
 	}
 
-	includeUnmanaged := d.Get("include_unmanaged").(bool)
-
-	if !includeUnmanaged {
+	if !d.Get("include_unmanaged").(bool) {
 		return nil
 	}
 
