@@ -14,8 +14,14 @@ description: |-
 
 ```terraform
 resource "hetznerrobot_vswitch_servers" "main" {
-  vswitch_id = 4000
+  vswitch_id = 10000
   servers    = ["1234567"]
+}
+
+resource "hetznerrobot_vswitch_servers" "main" {
+  vswitch_id        = 100001
+  servers           = ["1234567"]
+  include_unmanaged = true
 }
 ```
 
@@ -24,8 +30,12 @@ resource "hetznerrobot_vswitch_servers" "main" {
 
 ### Required
 
-- `servers` (List of String) List of server IDs to attach to the vSwitch.
+- `servers` (List of Number) List of server IDs to attach to the vSwitch.
 - `vswitch_id` (String) Existing vSwitch ID.
+
+### Optional
+
+- `include_unmanaged` (Boolean) Whether to include non-managed servers when reading the resource state.
 
 ### Read-Only
 

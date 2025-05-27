@@ -36,6 +36,12 @@ func ServersResource() *schema.Resource {
 				Description: "List of server IDs to attach to the vSwitch.",
 				Elem:        &schema.Schema{Type: schema.TypeInt},
 			},
+			"include_unmanaged": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Whether to include non-managed servers when reading the resource state.",
+			},
 		},
 	}
 }
@@ -83,6 +89,12 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 
 	if err = d.Set("vswitch_id", vswID); err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vswitch_id attribute: %w", err))
+	}
+
+	includeUnmanaged := d.Get("include_unmanaged").(bool)
+
+	if !includeUnmanaged {
+		return nil
 	}
 
 	servers := flattenServers(vsw.Servers)
