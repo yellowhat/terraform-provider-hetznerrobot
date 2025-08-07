@@ -15,8 +15,8 @@ const (
 	// ResourceType is the type name of the Hetzner Robot Firewall resource.
 	ResourceType = "hetznerrobot_firewall"
 	statusTrue   = "active"
-	// Maximum number of rules for a firewall, limitation from the Robot WebUI
-	maxRules     = 10
+	// Maximum number of rules for a firewall, limitation from the Robot WebUI.
+	maxRules = 10
 )
 
 // Resource defines the firewall terraform resource.
