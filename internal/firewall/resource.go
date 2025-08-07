@@ -15,6 +15,8 @@ const (
 	// ResourceType is the type name of the Hetzner Robot Firewall resource.
 	ResourceType = "hetznerrobot_firewall"
 	statusTrue   = "active"
+	// Maximum number of rules for a firewall, limitation from the Robot WebUI
+	maxRules     = 10
 )
 
 // Resource defines the firewall terraform resource.
@@ -46,7 +48,7 @@ func Resource() *schema.Resource {
 			"rule": {
 				Type:     schema.TypeList,
 				Required: true,
-				MaxItems: 10, // Limitation from the Robot WebUI
+				MaxItems: maxRules, 
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
