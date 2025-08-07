@@ -46,6 +46,7 @@ func Resource() *schema.Resource {
 			"rule": {
 				Type:     schema.TypeList,
 				Required: true,
+				MaxItems: 10, // Limitation from the Robot WebUI
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"name": {
