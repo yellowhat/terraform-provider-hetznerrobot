@@ -79,7 +79,9 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		}
 
 		chosenVLAN = freeVLAN
-		if err = d.Set("vlan", chosenVLAN); err != nil {
+
+		err = d.Set("vlan", chosenVLAN)
+		if err != nil {
 			return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
 		}
 	}
@@ -96,7 +98,8 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 		serverObjects := parseServerIDsToVSwitchServers(serverIDs)
 		if len(serverObjects) > 0 {
-			if err := hClient.AddVSwitchServers(ctx, vswID, serverObjects); err != nil {
+			err := hClient.AddVSwitchServers(ctx, vswID, serverObjects)
+			if err != nil {
 				return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 			}
 		}
@@ -125,18 +128,21 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(fmt.Errorf("error reading vSwitch: %w", err))
 	}
 
-	if err = d.Set("name", vsw.Name); err != nil {
+	err = d.Set("name", vsw.Name)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting name attribute: %w", err))
 	}
 
-	if err = d.Set("vlan", vsw.VLAN); err != nil {
+	err = d.Set("vlan", vsw.VLAN)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vlan attribute: %w", err))
 	}
 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
 
-	if err = d.Set("servers", servers); err != nil {
+	err = d.Set("servers", servers)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
@@ -152,7 +158,8 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		}
 	}
 
-	if err = d.Set("incidents", incidents); err != nil {
+	err = d.Set("incidents", incidents)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting incidents attribute: %w", err))
 	}
 
@@ -174,7 +181,8 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	if d.HasChange("name") || d.HasChange("vlan") {
 		oldVlan, _ := d.GetChange("vlan")
 
-		if err := hClient.UpdateVSwitch(ctx, id, name, vlan); err != nil {
+		err := hClient.UpdateVSwitch(ctx, id, name, vlan)
+		if err != nil {
 			return diag.FromErr(fmt.Errorf("error updating vSwitch: %w", err))
 		}
 
@@ -192,7 +200,8 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id); err != nil {
+		err := hClient.WaitForVSwitchReady(ctx, id)
+		if err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
@@ -216,14 +225,18 @@ func manageServers(
 
 	if len(toRemove) > 0 {
 		removeObjects := parseServerIDsToVSwitchServers(toRemove)
-		if err := hClient.RemoveVSwitchServers(ctx, id, removeObjects); err != nil {
+
+		err := hClient.RemoveVSwitchServers(ctx, id, removeObjects)
+		if err != nil {
 			return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
 		}
 	}
 
 	if len(toAdd) > 0 {
 		addObjects := parseServerIDsToVSwitchServers(toAdd)
-		if err := hClient.AddVSwitchServers(ctx, id, addObjects); err != nil {
+
+		err := hClient.AddVSwitchServers(ctx, id, addObjects)
+		if err != nil {
 			return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 		}
 	}
@@ -244,7 +257,8 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		cancellationDate = "now"
 	}
 
-	if err := hClient.DeleteVSwitch(ctx, id, cancellationDate); err != nil {
+	err := hClient.DeleteVSwitch(ctx, id, cancellationDate)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error deleting vSwitch: %w", err))
 	}
 

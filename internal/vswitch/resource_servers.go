@@ -58,11 +58,12 @@ func resourceServersCreate(ctx context.Context, d *schema.ResourceData, meta any
 	serverIDs := parseServerIDs(servers.([]any))
 	serverObjs := parseServerIDsToVSwitchServers(serverIDs)
 
-	if err := hClient.AddVSwitchServers(ctx, vswID, serverObjs); err != nil {
+	err := hClient.AddVSwitchServers(ctx, vswID, serverObjs)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error adding servers to vSwitch: %w", err))
 	}
 
-	err := hClient.WaitForVSwitchReady(ctx, vswID)
+	err = hClient.WaitForVSwitchReady(ctx, vswID)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("error waiting for vSwitch readiness after create: %w", err))
 	}
@@ -87,7 +88,8 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 
 	vswID := strconv.Itoa(vsw.ID)
 
-	if err = d.Set("vswitch_id", vswID); err != nil {
+	err = d.Set("vswitch_id", vswID)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vswitch_id attribute: %w", err))
 	}
 
@@ -98,7 +100,8 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 	servers := flattenServers(vsw.Servers)
 	sort.Ints(servers)
 
-	if err = d.Set("servers", servers); err != nil {
+	err = d.Set("servers", servers)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting servers attribute: %w", err))
 	}
 
@@ -124,7 +127,8 @@ func resourceServersUpdate(ctx context.Context, d *schema.ResourceData, meta any
 	}
 
 	if waitForReady {
-		if err := hClient.WaitForVSwitchReady(ctx, id); err != nil {
+		err := hClient.WaitForVSwitchReady(ctx, id)
+		if err != nil {
 			return diag.FromErr(
 				fmt.Errorf("error waiting for vSwitch readiness after update: %w", err),
 			)
@@ -145,7 +149,8 @@ func resourceServersDelete(ctx context.Context, d *schema.ResourceData, meta any
 	serverIDs := parseServerIDs(servers.([]any))
 	serverObjs := parseServerIDsToVSwitchServers(serverIDs)
 
-	if err := hClient.RemoveVSwitchServers(ctx, id, serverObjs); err != nil {
+	err := hClient.RemoveVSwitchServers(ctx, id, serverObjs)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error removing servers from vSwitch: %w", err))
 	}
 
