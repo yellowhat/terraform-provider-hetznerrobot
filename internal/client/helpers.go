@@ -45,7 +45,9 @@ func runConcurrentTasks[T any](
 			}
 
 			mu.Lock()
+
 			items = append(items, item)
+
 			mu.Unlock()
 		}(id)
 	}
