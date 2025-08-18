@@ -66,7 +66,8 @@ func mockServer() *httptest.Server {
 		log.Fatalf("doc load file: %s", err)
 	}
 
-	if err = doc.Validate(loader.Context); err != nil {
+	err = doc.Validate(loader.Context)
+	if err != nil {
 		log.Fatalf("doc validation: %s", err)
 	}
 
@@ -84,6 +85,7 @@ func mockServer() *httptest.Server {
 				return
 			}
 
+			//exhaustruct:ignore
 			requestValidationInput := &openapi3filter.RequestValidationInput{
 				Request:    req,
 				PathParams: pathParams,
@@ -92,7 +94,9 @@ func mockServer() *httptest.Server {
 					AuthenticationFunc: authValidator(),
 				},
 			}
-			if err = openapi3filter.ValidateRequest(req.Context(), requestValidationInput); err != nil {
+
+			err = openapi3filter.ValidateRequest(req.Context(), requestValidationInput)
+			if err != nil {
 				http.Error(writer, "Error validating request", http.StatusBadRequest)
 
 				return
@@ -143,7 +147,16 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusOK,
-			wantBody:    "[{\"server_name\":\"server-1\",\"server_number\":1},{\"server_name\":\"server-2\",\"server_number\":2}]",
+			wantBody: `[
+				{
+					"server_name": "server-1",
+					"server_number": 1
+				},
+				{
+					"server_name": "server-2",
+					"server_number": 2
+				}
+			]`,
 		},
 		{
 			name:        "GET wrong username",
