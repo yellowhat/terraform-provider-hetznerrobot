@@ -14,9 +14,10 @@ linters:
         main:
           allow:
             - $gostd  # All of go's standard library
+            - github.com/yellowhat/terraform-provider-hetznerrobot
             - github.com/hashicorp/terraform-plugin-sdk/v2
             - github.com/stretchr/testify/assert
-            - github.com/yellowhat/terraform-provider-hetznerrobot
+            - github.com/getkin/kin-openapi
     exhaustruct:
       exclude:
         - "^net/http.Client$"
