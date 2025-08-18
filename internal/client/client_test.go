@@ -58,7 +58,6 @@ func authValidator() openapi3filter.AuthenticationFunc {
 	}
 }
 
-//gocyclo:ignore
 func mockServer() *httptest.Server {
 	loader := openapi3.NewLoader()
 
@@ -98,7 +97,7 @@ func mockServer() *httptest.Server {
 
 			err = openapi3filter.ValidateRequest(req.Context(), requestValidationInput)
 			if err != nil {
-				http.Error(writer, "Error validating request", http.StatusBadRequest)
+				http.Error(writer, err.Error(), http.StatusBadRequest)
 
 				return
 			}
@@ -181,7 +180,7 @@ func TestAuth(t *testing.T) {
 			username:    "wrongUser",
 			password:    testPassword,
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "",
+			wantBody:    "security requirements failed: invalid credentials\n",
 		},
 		{
 			name:        "GET wrong password",
@@ -192,7 +191,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    "wrongPass",
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "",
+			wantBody:    "security requirements failed: invalid credentials\n",
 		},
 		{
 			name:        "GET no path",
@@ -203,7 +202,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "",
+			wantBody:    "No route found\n",
 		},
 		{
 			name:        "POST no method",
@@ -214,7 +213,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "",
+			wantBody:    "No route found\n",
 		},
 		{
 			name:        "POST no path",
@@ -225,7 +224,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "No route found",
+			wantBody:    "No route found\n",
 		},
 	}
 
