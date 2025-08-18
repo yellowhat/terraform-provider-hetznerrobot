@@ -58,6 +58,7 @@ func authValidator() openapi3filter.AuthenticationFunc {
 	}
 }
 
+//gocyclo:ignore
 func mockServer() *httptest.Server {
 	loader := openapi3.NewLoader()
 
@@ -80,7 +81,7 @@ func mockServer() *httptest.Server {
 		http.HandlerFunc(func(writer http.ResponseWriter, req *http.Request) {
 			route, pathParams, err := router.FindRoute(req)
 			if err != nil {
-				http.Error(writer, "Error validating request", http.StatusBadRequest)
+				http.Error(writer, "No route found", http.StatusBadRequest)
 
 				return
 			}
@@ -169,16 +170,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusOK,
-			wantBody: `[
-				{
-					"server_name": "server-1",
-					"server_number": 1
-				},
-				{
-					"server_name": "server-2",
-					"server_number": 2
-				}
-			]`,
+			wantBody:    `[{"dc":"fsn1-dc14","product":"AX41","server_ip":"88.99.100.1","server_name":"server-1","server_number":1,"status":"running"},{"dc":"fsn1-dc14","product":"AX51","server_ip":"88.99.100.2","server_name":"server-2","server_number":2,"status":"running"}]`,
 		},
 		{
 			name:        "GET wrong username",
@@ -233,7 +225,7 @@ func TestAuth(t *testing.T) {
 			username:    testUsername,
 			password:    testPassword,
 			wantCode:    http.StatusBadRequest,
-			wantBody:    "",
+			wantBody:    "No route found",
 		},
 	}
 
@@ -265,10 +257,6 @@ func TestAuth(t *testing.T) {
 					tc.wantCode,
 					resp.StatusCode,
 				)
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				return
 			}
 
 			body, err := io.ReadAll(resp.Body)

@@ -5,10 +5,6 @@ info:
   version: 1.0.0
   description: API for managing servers, IPs, boot configurations, firewalls, and vSwitches.
 
-servers:
-  - url: https://robot-ws.your-server.de
-    description: Main (production) server
-
 security:
   - basicAuth: []
 
@@ -402,6 +398,19 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Server'
+              example:
+                - server_name: "server-1"
+                  server_number: 1
+                  server_ip: "88.99.100.1"
+                  dc: "fsn1-dc14"
+                  product: "AX41"
+                  status: "running"
+                - server_name: "server-2"
+                  server_number: 2
+                  server_ip: "88.99.100.2"
+                  dc: "fsn1-dc14"
+                  product: "AX51"
+                  status: "running"
         '404':
           $ref: '#/components/responses/ErrorResponse'
       security:
@@ -424,6 +433,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Server'
+              example:
+                server_name: "test-server"
+                server_number: 123456
+                server_ip: "88.99.100.100"
+                dc: "fsn1-dc14"
+                product: "AX41"
+                status: "running"
         '404':
           $ref: '#/components/responses/ErrorResponse'
       security:
@@ -454,6 +470,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Server'
+              example:
+                server_name: "updated-server-name"
+                server_number: 123456
+                server_ip: "88.99.100.100"
+                dc: "fsn1-dc14"
+                product: "AX41"
+                status: "running"
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
