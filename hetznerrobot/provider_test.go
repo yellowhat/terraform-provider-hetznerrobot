@@ -13,7 +13,8 @@ import (
 func TestProvider(t *testing.T) {
 	t.Parallel()
 
-	if err := hetznerrobot.Provider().InternalValidate(); err != nil {
+	err := hetznerrobot.Provider().InternalValidate()
+	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }

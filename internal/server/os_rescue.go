@@ -93,13 +93,15 @@ func resourceOSRescueCreate(
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
-	if err := hClient.RebootServer(ctx, serverID, "hw"); err != nil {
+	err = hClient.RebootServer(ctx, serverID, "hw")
+	if err != nil {
 		return diag.FromErr(
 			fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
 		)
 	}
 
-	if err := waitForSSH(ip, waitMin*time.Minute, retryAfterSec*time.Second); err != nil {
+	err = waitForSSH(ctx, ip, waitMin*time.Minute, retryAfterSec*time.Second)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
 	}
 
@@ -108,11 +110,13 @@ func resourceOSRescueCreate(
 		return diag.FromErr(fmt.Errorf("failed to rename server %s: %w", serverID, err))
 	}
 
-	if err := d.Set("ip", ip); err != nil {
+	err = d.Set("ip", ip)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting ip attribute: %w", err))
 	}
 
-	if err := d.Set("ssh_password", pass); err != nil {
+	err = d.Set("ssh_password", pass)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting ssh_password attribute: %w", err))
 	}
 
@@ -149,12 +153,22 @@ func resourceOSRescueUpdate(
 	return nil
 }
 
-func waitForSSH(ip string, timeout time.Duration, interval time.Duration) error {
+func waitForSSH(
+	ctx context.Context,
+	ip string,
+	timeout time.Duration,
+	interval time.Duration,
+) error {
 	const waitTime = 5
+
+	//exhaustruct:ignore
+	dialer := &net.Dialer{
+		Timeout: waitTime * time.Second,
+	}
 
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		conn, err := net.DialTimeout("tcp", ip+":22", waitTime*time.Second)
+		conn, err := dialer.DialContext(ctx, "tcp", ip+":22")
 		if err == nil {
 			_ = conn.Close()
 

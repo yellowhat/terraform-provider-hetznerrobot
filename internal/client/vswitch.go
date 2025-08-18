@@ -72,7 +72,9 @@ func (c *HetznerRobotClient) FetchVSwitchByID(
 	}
 
 	var vswitch VSwitch
-	if err := json.NewDecoder(resp.Body).Decode(&vswitch); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&vswitch)
+	if err != nil {
 		return VSwitch{}, fmt.Errorf("error decoding VSwitch response: %w", err)
 	}
 
@@ -118,7 +120,9 @@ func (c *HetznerRobotClient) FetchAllVSwitches(ctx context.Context) ([]VSwitch, 
 	}
 
 	var vswitches []VSwitch
-	if err := json.NewDecoder(resp.Body).Decode(&vswitches); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&vswitches)
+	if err != nil {
 		return nil, fmt.Errorf("error decoding vSwitches: %w", err)
 	}
 
@@ -158,7 +162,9 @@ func (c *HetznerRobotClient) CreateVSwitch(
 	}
 
 	var vswitch VSwitch
-	if err := json.NewDecoder(resp.Body).Decode(&vswitch); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&vswitch)
+	if err != nil {
 		return nil, fmt.Errorf("error decoding VSwitch response: %w", err)
 	}
 
