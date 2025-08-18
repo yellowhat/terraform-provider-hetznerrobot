@@ -19,6 +19,7 @@ func runConcurrentTasks[T any](
 	)
 
 	const maxConcurrent = 10
+
 	sem := make(chan struct{}, maxConcurrent)
 
 	for _, id := range ids {
@@ -26,6 +27,7 @@ func runConcurrentTasks[T any](
 
 		go func(id string) {
 			defer wg.Done()
+
 			sem <- struct{}{}
 
 			item, err := worker(ctx, id)
@@ -34,7 +36,9 @@ func runConcurrentTasks[T any](
 
 			if err != nil {
 				mu.Lock()
+
 				errs = append(errs, err)
+
 				mu.Unlock()
 
 				return

@@ -154,15 +154,18 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.FromErr(err)
 	}
 
-	if err = d.Set("active", firewall.Status == statusTrue); err != nil {
+	err = d.Set("active", firewall.Status == statusTrue)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting active attribute: %w", err))
 	}
 
-	if err = d.Set("whitelist_hos", firewall.WhitelistHetznerServices); err != nil {
+	err = d.Set("whitelist_hos", firewall.WhitelistHetznerServices)
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting whitelist_hos attribute: %w", err))
 	}
 
-	if err = d.Set("rule", flattenFirewallRules(firewall.Rules.Input)); err != nil {
+	err = d.Set("rule", flattenFirewallRules(firewall.Rules.Input))
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting rule attribute: %w", err))
 	}
 
