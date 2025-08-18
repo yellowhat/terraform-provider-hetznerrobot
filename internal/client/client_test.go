@@ -103,9 +103,31 @@ func mockServer() *httptest.Server {
 			}
 
 			responses := route.PathItem.GetOperation(route.Method).Responses
-			response := responses.Map()["200"].Value.Content["application/json"].Example
 
-			responseJSON, err := json.Marshal(response)
+			// Check if 200 response exists
+			responseSpec := responses.Map()["200"]
+			if responseSpec == nil || responseSpec.Value == nil {
+				http.Error(writer, "No 200 response defined", http.StatusInternalServerError)
+
+				return
+			}
+
+			// Check if JSON content exists
+			content := responseSpec.Value.Content["application/json"]
+			if content == nil {
+				http.Error(writer, "No JSON content defined", http.StatusInternalServerError)
+
+				return
+			}
+
+			// Check if example is available
+			if content.Example == nil {
+				http.Error(writer, "No Example defined", http.StatusInternalServerError)
+
+				return
+			}
+
+			responseJSON, err := json.Marshal(content.Example)
 			if err != nil {
 				http.Error(writer, "Error marshalling json", http.StatusInternalServerError)
 
