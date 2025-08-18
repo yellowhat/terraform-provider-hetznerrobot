@@ -31,7 +31,8 @@ func setupMockServer(t *testing.T) *httptest.Server {
 			if authHeader != wantAuth {
 				writer.WriteHeader(http.StatusUnauthorized)
 
-				if _, err := fmt.Fprintln(writer, "Unauthorized"); err != nil {
+				_, err := fmt.Fprintln(writer, "Unauthorized")
+				if err != nil {
 					t.Errorf("error writing response: %v", err)
 				}
 
@@ -44,7 +45,8 @@ func setupMockServer(t *testing.T) *httptest.Server {
 			if err != nil {
 				writer.WriteHeader(http.StatusInternalServerError)
 
-				if _, err := fmt.Fprintln(writer, "Error reading request body"); err != nil {
+				_, err := fmt.Fprintln(writer, "Error reading request body")
+				if err != nil {
 					t.Errorf("error writing response: %v", err)
 				}
 

@@ -63,7 +63,9 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	}
 
 	var fwResp FirewallResponse
-	if err := json.NewDecoder(resp.Body).Decode(&fwResp); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&fwResp)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse firewall response: %w", err)
 	}
 

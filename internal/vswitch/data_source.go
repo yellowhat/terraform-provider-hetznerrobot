@@ -80,7 +80,8 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.FromErr(errors.New("no vSwitches found"))
 	}
 
-	if err := d.Set("vswitches", flattenVSwitches(vswitches)); err != nil {
+	err = d.Set("vswitches", flattenVSwitches(vswitches))
+	if err != nil {
 		return diag.FromErr(fmt.Errorf("error setting vswitches attribute: %w", err))
 	}
 

@@ -70,7 +70,8 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Se
 		Server Server `json:"server"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
 		return Server{}, fmt.Errorf("FetchServerByID decode error: %w", err)
 	}
 
@@ -118,7 +119,8 @@ func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, err
 		Server Server `json:"server"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	err = json.NewDecoder(resp.Body).Decode(&raw)
+	if err != nil {
 		return nil, fmt.Errorf("FetchAllServers decode error: %w", err)
 	}
 
@@ -163,7 +165,9 @@ func (c *HetznerRobotClient) RenameServer(
 	}
 
 	var renameResp HetznerRenameResponse
-	if err := json.NewDecoder(resp.Body).Decode(&renameResp); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&renameResp)
+	if err != nil {
 		return nil, fmt.Errorf("error parsing rename response: %w", err)
 	}
 
@@ -208,7 +212,9 @@ func (c *HetznerRobotClient) EnableRescueMode(
 	}
 
 	var rescueResp HetznerRescueResponse
-	if err := json.NewDecoder(resp.Body).Decode(&rescueResp); err != nil {
+
+	err = json.NewDecoder(resp.Body).Decode(&rescueResp)
+	if err != nil {
 		return nil, fmt.Errorf("error parsing rescue response: %w", err)
 	}
 
@@ -256,7 +262,8 @@ func (c *HetznerRobotClient) RebootServer(
 		// Allow some time to power off
 		time.Sleep(waitDuration)
 
-		if err := c.powerOnServer(ctx, serverID, endpoint); err != nil {
+		err := c.powerOnServer(ctx, serverID, endpoint)
+		if err != nil {
 			return fmt.Errorf("unable to power on: %w", err)
 		}
 	}
