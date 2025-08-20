@@ -8,6 +8,8 @@ linters:
     - err113
     # Duable, not now
     - forcetypeassert
+    # Replaced by golines
+    - lll
   settings:
     depguard:
       rules:
