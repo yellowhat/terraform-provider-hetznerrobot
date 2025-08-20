@@ -42,13 +42,13 @@ linters:
       - source: "^func Test"
         linters:
           # Due to table tests
-          - funlen
           - cyclop
+          - funlen
       - source: "^func mockServer"
         linters:
           # Due to mockServer definiion
-          - funlen
           - cyclop
+          - funlen
       # Long as it defines the resource schema
       - source: "^func Resource"
         linters:
