@@ -46,6 +46,7 @@ linters:
           # Due to table tests
           - cyclop
           - funlen
+          - gocognit
       - source: "^func mockServer"
         linters:
           # Due to mockServer definiion
