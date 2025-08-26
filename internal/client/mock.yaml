@@ -1477,47 +1477,19 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
           application/x-www-form-urlencoded:
             schema:
               type: object
+              additionalProperties: true
               properties:
                 status:
                   type: string
-                filter_ipv6:
-                  type: boolean
                 whitelist_hos:
                   type: boolean
-                rules:
-                  type: object
-                  additionalProperties:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        ip_version:
-                          type: string
-                        name:
-                          type: string
-                        dst_ip:
-                          type: string
-                        src_ip:
-                          type: string
-                        dst_port:
-                          type: string
-                        src_port:
-                          type: string
-                        protocol:
-                          type: string
-                        tcp_flags:
-                          type: string
-                        action:
-                          type: string
-                template_id:
-                  type: integer
       responses:
         '200':
           description: Successful response
@@ -1525,6 +1497,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Firewall'
+              example:
+                firewall:
+                  ip: "1.2.3.4"
+                  whitelist_hos: true
+                  status: "active"
+                  rules:
+                    input:
+                      - name: allow-ssh
+                        src_ip: 0.0.0.0/0
+                        dst_port: "22"
+                        protocol: tcp
+                        action: accept
+                      - name: allow-http
+                        src_ip: 0.0.0.0/0
+                        dst_port: "80"
+                        protocol: tcp
+                        action: accept
         '400':
           $ref: '#/components/responses/ErrorResponse'
         '404':
@@ -1542,7 +1531,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
           description: Successful response
