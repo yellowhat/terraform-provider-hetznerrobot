@@ -104,7 +104,6 @@ func mockServer() *httptest.Server {
 
 			responses := route.PathItem.GetOperation(route.Method).Responses
 
-			// Check if 200 response exists
 			responseSpec := responses.Map()["200"]
 			if responseSpec == nil || responseSpec.Value == nil {
 				http.Error(writer, "No 200 response defined", http.StatusInternalServerError)
@@ -112,7 +111,6 @@ func mockServer() *httptest.Server {
 				return
 			}
 
-			// Check if JSON content exists
 			content := responseSpec.Value.Content["application/json"]
 			if content == nil {
 				http.Error(writer, "No JSON content defined", http.StatusInternalServerError)
@@ -120,7 +118,6 @@ func mockServer() *httptest.Server {
 				return
 			}
 
-			// Check if example is available
 			if content.Example == nil {
 				http.Error(writer, "No Example defined", http.StatusInternalServerError)
 
@@ -147,7 +144,7 @@ func mockServer() *httptest.Server {
 func TestAuth(t *testing.T) {
 	t.Parallel()
 
-	type testCase struct {
+	tests := []struct {
 		name        string
 		method      string
 		path        string
@@ -157,9 +154,7 @@ func TestAuth(t *testing.T) {
 		password    string
 		wantCode    int
 		wantBody    string
-	}
-
-	testCases := []testCase{
+	}{
 		{
 			name:        "GET success",
 			method:      "GET",
@@ -228,44 +223,50 @@ func TestAuth(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			server := mockServer()
 			defer server.Close()
 
 			client := client.New(&client.ProviderConfig{
-				Username: tc.username,
-				Password: tc.password,
+				Username: test.username,
+				Password: test.password,
 				BaseURL:  server.URL,
 			})
 
 			ctx := context.Background()
 
-			reqBody := bytes.NewBufferString(tc.body)
+			reqBody := bytes.NewBufferString(test.body)
 
-			resp, err := client.DoRequest(ctx, tc.method, tc.path, reqBody, tc.contentType)
+			response, err := client.DoRequest(
+				ctx,
+				test.method,
+				test.path,
+				reqBody,
+				test.contentType,
+			)
 			if err != nil {
-				t.Errorf("DoRequest() errored: %v", err)
+				t.Errorf("DoRequest: %v", err)
 			}
 
-			if resp.StatusCode != tc.wantCode {
+			if test.wantCode != response.StatusCode {
 				t.Errorf(
-					"Incorrect status code: want %d, got %d",
-					tc.wantCode,
-					resp.StatusCode,
+					"status code: want %d, got %d",
+					test.wantCode,
+					response.StatusCode,
 				)
 			}
 
-			body, err := io.ReadAll(resp.Body)
+			body, err := io.ReadAll(response.Body)
 			if err != nil {
-				t.Errorf("error parsing response: %v", err)
+				t.Errorf("reading body: %v", err)
 			}
-			defer resp.Body.Close()
+			defer response.Body.Close()
 
-			if tc.wantBody != string(body) {
-				t.Errorf("wrong body: want '%s', got '%s'", tc.wantBody, string(body))
+			if test.wantBody != string(body) {
+				t.Errorf("body\nwant: %s\ngot: %s", test.wantBody, string(body))
 			}
 		})
 	}
