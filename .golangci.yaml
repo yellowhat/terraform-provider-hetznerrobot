@@ -8,15 +8,18 @@ linters:
     - err113
     # Duable, not now
     - forcetypeassert
+    # Replaced by golines
+    - lll
   settings:
     depguard:
       rules:
         main:
           allow:
             - $gostd  # All of go's standard library
+            - github.com/yellowhat/terraform-provider-hetznerrobot
             - github.com/hashicorp/terraform-plugin-sdk/v2
             - github.com/stretchr/testify/assert
-            - github.com/yellowhat/terraform-provider-hetznerrobot
+            - github.com/getkin/kin-openapi
     exhaustruct:
       exclude:
         - "^net/http.Client$"
@@ -38,18 +41,20 @@ linters:
       - source: "^\\s*defer\\s+"
         linters:
           - errcheck
-      # Long due to table tests
       - source: "^func Test"
         linters:
+          # Due to table tests
+          - cyclop
+          - funlen
+      - source: "^func mockServer"
+        linters:
+          # Due to mockServer definiion
+          - cyclop
           - funlen
       # Long as it defines the resource schema
       - source: "^func Resource"
         linters:
           - funlen
-      # High cyclomatic complexity due to table test
-      - source: "^func Test"
-        linters:
-          - cyclop
 
 formatters:
   enable:
