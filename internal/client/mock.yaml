@@ -1484,12 +1484,38 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
+              # Most of the rules fields are optional
               additionalProperties: true
               properties:
                 status:
                   type: string
                 whitelist_hos:
                   type: boolean
+                # rules:
+                #   type: object
+                #   additionalProperties:
+                #     type: array
+                #     items:
+                #       type: object
+                #       properties:
+                #         ip_version:
+                #           type: string
+                #         name:
+                #           type: string
+                #         dst_ip:
+                #           type: string
+                #         src_ip:
+                #           type: string
+                #         dst_port:
+                #           type: string
+                #         src_port:
+                #           type: string
+                #         protocol:
+                #           type: string
+                #         tcp_flags:
+                #           type: string
+                #         action:
+                #           type: string
       responses:
         '200':
           description: Successful response
