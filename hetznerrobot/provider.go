@@ -9,6 +9,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/sshkey"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
@@ -42,6 +43,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"hetznerrobot_firewall":        firewall.Resource(),
 			"hetznerrobot_os_rescue":       server.ResourceOSRescue(),
+			"hetznerrobot_ssh_key":         sshkey.Resource(),
 			"hetznerrobot_vswitch":         vswitch.Resource(),
 			"hetznerrobot_vswitch_servers": vswitch.ServersResource(),
 		},
