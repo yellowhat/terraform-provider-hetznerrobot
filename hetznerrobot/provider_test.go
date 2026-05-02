@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/hetznerrobot"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/failover"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
@@ -24,6 +25,7 @@ func TestProvider_Resources(t *testing.T) {
 
 	provider := hetznerrobot.Provider()
 	expectedResources := []string{
+		failover.ResourceType,
 		firewall.ResourceType,
 		server.ResourceOSRescueType,
 		vswitch.ResourceType,
