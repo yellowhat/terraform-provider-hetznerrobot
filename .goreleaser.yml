@@ -17,10 +17,15 @@ builds:
       - -X github.com/yellowhat/terraform-provider-hetzner-robot/hetzner.Version={{ .Version }}
       - -X github.com/yellowhat/terraform-provider-hetzner-robot/hetzner.Commit={{ .Commit }}
     goos:
+      - darwin
       - linux
+      - windows
     goarch:
       - amd64
       - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
     binary: "{{ .ProjectName }}_v{{ .Version }}"
 
 archives:
