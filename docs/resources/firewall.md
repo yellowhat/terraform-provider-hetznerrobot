@@ -44,7 +44,7 @@ resource "hetznerrobot_firewall" "firewall" {
 ### Required
 
 - `active` (Boolean) Whether the firewall is active.
-- `rule` (Block List, Min: 1) (see [below for nested schema](#nestedblock--rule))
+- `rule` (Block List, Min: 1, Max: 10) (see [below for nested schema](#nestedblock--rule))
 - `server_id` (String) ID of the server to which the firewall will be applied.
 - `whitelist_hos` (Boolean) Whether to whitelist Hetzner services.
 
