@@ -3,12 +3,12 @@
 page_title: "hetznerrobot_os_rescue Resource - hetznerrobot"
 subcategory: ""
 description: |-
-  
+  Activates the Hetzner Robot rescue system on a server and triggers a hardware reset to boot into it. Create issues a hw reset (equivalent to pressing the reset button), waits for the rescue system's SSH port to come up, and renames the server. Update only handles server_name changes; all other fields are effectively immutable. Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS — once rescue activates and you reboot, the server comes up normally on its next boot regardless of Terraform state.
 ---
 
 # hetznerrobot_os_rescue (Resource)
 
-
+Activates the Hetzner Robot rescue system on a server and triggers a hardware reset to boot into it. Create issues a `hw` reset (equivalent to pressing the reset button), waits for the rescue system's SSH port to come up, and renames the server. Update only handles `server_name` changes; all other fields are effectively immutable. Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS — once rescue activates and you reboot, the server comes up normally on its next boot regardless of Terraform state.
 
 ## Example Usage
 
@@ -24,16 +24,16 @@ resource "hetznerrobot_os_rescue" "test" {
 
 ### Required
 
-- `server_id` (String) Server ID.
-- `server_name` (String) The server will be renamed to this name.
+- `server_id` (String) Server ID (Hetzner server number).
+- `server_name` (String) Name to assign to the server after the rescue system is reachable. The only field whose change is honored by Update.
 
 ### Optional
 
-- `rescue_os` (String) Operating system for rescue mode (e.g. linux, freebsd).
-- `ssh_keys` (List of String) List of SSH keys to be added during the rescue mode.
+- `rescue_os` (String) Operating system image to boot in rescue mode (e.g. `linux`, `linuxold`, `freebsd`, `vkvm`). Changing this in-place is not supported by Update.
+- `ssh_keys` (List of String) Public SSH keys to install in the rescue system's authorized_keys. If non-empty, the rescue system disables password authentication and `ssh_password` will be empty. If left empty, Hetzner generates a one-shot root password (returned in `ssh_password`).
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
-- `ip` (String) Server public IP.
-- `ssh_password` (String, Sensitive) Current Rescue System root password.
+- `ip` (String) Public IPv4 of the rescue system, returned by the activation call.
+- `ssh_password` (String, Sensitive) One-shot root password for the rescue system. Set only when `ssh_keys` is empty; otherwise this is empty and you authenticate with one of the listed keys.
