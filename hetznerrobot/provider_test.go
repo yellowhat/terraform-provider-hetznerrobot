@@ -7,6 +7,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/hetznerrobot"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/sshkey"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
@@ -26,6 +27,7 @@ func TestProvider_Resources(t *testing.T) {
 	expectedResources := []string{
 		firewall.ResourceType,
 		server.ResourceOSRescueType,
+		sshkey.ResourceType,
 		vswitch.ResourceType,
 		vswitch.ServersResourceType,
 	}
