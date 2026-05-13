@@ -26,7 +26,7 @@ var ErrSSHKeyNotFound = errors.New("ssh key not found")
 
 // FetchSSHKey returns the SSH key entry for a fingerprint.
 func (c *HetznerRobotClient) FetchSSHKey(ctx context.Context, fingerprint string) (SSHKey, error) {
-	resp, err := c.DoRequest(ctx, "GET", "/key/"+fingerprint, nil, "")
+	resp, err := c.DoRequest(ctx, "GET", "/key/"+url.PathEscape(fingerprint), nil, "")
 	if err != nil {
 		return SSHKey{}, fmt.Errorf("FetchSSHKey request error: %w", err)
 	}
@@ -103,7 +103,7 @@ func (c *HetznerRobotClient) RenameSSHKey(ctx context.Context, fingerprint, name
 	resp, err := c.DoRequest(
 		ctx,
 		"POST",
-		"/key/"+fingerprint,
+		"/key/"+url.PathEscape(fingerprint),
 		strings.NewReader(form.Encode()),
 		"application/x-www-form-urlencoded",
 	)
@@ -127,7 +127,7 @@ func (c *HetznerRobotClient) RenameSSHKey(ctx context.Context, fingerprint, name
 
 // DeleteSSHKey removes an SSH key. A 404 is treated as success.
 func (c *HetznerRobotClient) DeleteSSHKey(ctx context.Context, fingerprint string) error {
-	resp, err := c.DoRequest(ctx, "DELETE", "/key/"+fingerprint, nil, "")
+	resp, err := c.DoRequest(ctx, "DELETE", "/key/"+url.PathEscape(fingerprint), nil, "")
 	if err != nil {
 		return fmt.Errorf("DeleteSSHKey request error: %w", err)
 	}
