@@ -20,10 +20,10 @@ func Resource() *schema.Resource {
 		Description: "Manages an SSH key in the Hetzner Robot account-level key registry. " +
 			"Registered keys can be referenced by fingerprint when activating the rescue " +
 			"system or ordering new servers.",
-		CreateContext: create,
-		ReadContext:   read,
-		UpdateContext: update,
-		DeleteContext: delete_,
+		CreateContext: resourceCreate,
+		ReadContext:   resourceRead,
+		UpdateContext: resourceUpdate,
+		DeleteContext: resourceDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -63,7 +63,7 @@ func Resource() *schema.Resource {
 	}
 }
 
-func create(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -76,10 +76,10 @@ func create(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnost
 
 	d.SetId(key.Fingerprint)
 
-	return read(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func read(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -113,7 +113,7 @@ func read(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostic
 	return nil
 }
 
-func update(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -126,11 +126,10 @@ func update(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnost
 		}
 	}
 
-	return read(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-//nolint:revive // delete is a Go builtin; trailing underscore avoids shadowing.
-func delete_(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
