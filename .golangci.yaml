@@ -10,6 +10,8 @@ linters:
     - forcetypeassert
     # Replaced by golines
     - lll
+    # Overly strict: repeated string literals do not always benefit from constants
+    - goconst
   settings:
     depguard:
       rules:
