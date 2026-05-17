@@ -1,6 +1,6 @@
 # renovate: datasource=docker depName=docker.io/golang
 
-GOLANG_VER := "1.26.2"
+GOLANG_VER := "1.26.3"
 
 # renovate: datasource=github-releases depName=hashicorp/terraform
 

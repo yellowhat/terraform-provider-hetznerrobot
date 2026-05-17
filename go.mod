@@ -1,6 +1,6 @@
 module github.com/yellowhat/terraform-provider-hetznerrobot
 
-go 1.23.2
+go 1.26.3
 
 require (
 	github.com/getkin/kin-openapi v0.132.0
