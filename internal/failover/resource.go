@@ -11,18 +11,20 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// ResourceType is the type name of the Hetzner Robot failover resource.
-const ResourceType = "hetznerrobot_failover"
+const (
+	// ResourceType is the type name of the Hetzner Robot failover resource.
+	ResourceType = "hetznerrobot_failover"
+)
 
 // Resource defines the failover terraform resource.
 func Resource() *schema.Resource {
 	return &schema.Resource{
 		Description: "Routes a Hetzner Robot failover IP to a target server. " +
 			"Destroying the resource resets the routing back to the failover IP's primary server.",
-		CreateContext: create,
-		ReadContext:   read,
-		UpdateContext: update,
-		DeleteContext: delete_,
+		CreateContext: resourceCreate,
+		ReadContext:   resourceRead,
+		UpdateContext: resourceUpdate,
+		DeleteContext: resourceDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
 		},
@@ -57,7 +59,7 @@ func Resource() *schema.Resource {
 	}
 }
 
-func create(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -73,10 +75,10 @@ func create(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnost
 
 	d.SetId(ip)
 
-	return read(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-func read(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -109,7 +111,7 @@ func read(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostic
 	return nil
 }
 
-func update(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
@@ -122,11 +124,10 @@ func update(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnost
 		}
 	}
 
-	return read(ctx, d, meta)
+	return resourceRead(ctx, d, meta)
 }
 
-//nolint:revive // delete is a Go builtin; trailing underscore avoids shadowing.
-func delete_(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
+func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	hClient, ok := meta.(*client.HetznerRobotClient)
 	if !ok {
 		return diag.Errorf("invalid client type")
