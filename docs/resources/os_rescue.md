@@ -39,6 +39,7 @@ resource "hetznerrobot_os_rescue" "test" {
 
 ### Optional
 
+- `reboot` (Boolean) Whether to trigger a hardware reset to boot into the rescue system after activation. When `false`, the rescue system is armed for the next boot but the server is left in its current running state; the caller is expected to reboot it. Skipping the reboot also skips the wait for SSH on the rescue system. Only takes effect on Create — flipping this on an existing resource forces recreate.
 - `rescue_os` (String) Operating system for rescue mode (e.g. linux, freebsd).
 - `ssh_keys` (List of String) List of public SSH keys to install in the rescue system's authorized_keys. If non-empty, the rescue system disables password authentication and `ssh_password` will be empty. If left empty, Hetzner generates a one-shot root password (returned in `ssh_password`).
 

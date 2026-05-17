@@ -58,6 +58,16 @@ Read and Delete are no-ops, so destroying the resource does not deactivate rescu
 					"If left empty, Hetzner generates a one-shot root password (returned in `ssh_password`).",
 				Elem: &schema.Schema{Type: schema.TypeString},
 			},
+			"reboot": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				Default:  true,
+				ForceNew: true,
+				Description: "Whether to trigger a hardware reset to boot into the rescue system after activation. " +
+					"When `false`, the rescue system is armed for the next boot but the server is left in its current running state; " +
+					"the caller is expected to reboot it. Skipping the reboot also skips the wait for SSH on the rescue system. " +
+					"Only takes effect on Create — flipping this on an existing resource forces recreate.",
+			},
 			"ip": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -86,12 +96,7 @@ func resourceOSRescueCreate(
 	serverName := d.Get("server_name").(string)
 	serverID := d.Get("server_id").(string)
 	rescueOS := d.Get("rescue_os").(string)
-	sshKeysRaw := d.Get("ssh_keys").([]any)
-
-	sshKeys := make([]string, 0, len(sshKeysRaw))
-	for _, key := range sshKeysRaw {
-		sshKeys = append(sshKeys, key.(string))
-	}
+	sshKeys := parseSSHKeys(d.Get("ssh_keys").([]any))
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
@@ -103,16 +108,18 @@ func resourceOSRescueCreate(
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
-	err = hClient.RebootServer(ctx, serverID, "hw")
-	if err != nil {
-		return diag.FromErr(
-			fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
-		)
-	}
+	if d.Get("reboot").(bool) {
+		err = hClient.RebootServer(ctx, serverID, "hw")
+		if err != nil {
+			return diag.FromErr(
+				fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
+			)
+		}
 
-	err = waitForSSH(ctx, ip, waitMin*time.Minute, retryAfterSec*time.Second)
-	if err != nil {
-		return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
+		err = waitForSSH(ctx, ip, waitMin*time.Minute, retryAfterSec*time.Second)
+		if err != nil {
+			return diag.FromErr(fmt.Errorf("SSH not available on server %s: %w", serverID, err))
+		}
 	}
 
 	_, err = hClient.RenameServer(ctx, serverID, serverName)
@@ -161,6 +168,15 @@ func resourceOSRescueUpdate(
 	}
 
 	return nil
+}
+
+func parseSSHKeys(raw []any) []string {
+	keys := make([]string, 0, len(raw))
+	for _, key := range raw {
+		keys = append(keys, key.(string))
+	}
+
+	return keys
 }
 
 func waitForSSH(
