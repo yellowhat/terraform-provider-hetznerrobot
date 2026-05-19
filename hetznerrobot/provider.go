@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/failover"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/sshkey"
@@ -41,6 +42,7 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
+			"hetznerrobot_failover":        failover.Resource(),
 			"hetznerrobot_firewall":        firewall.Resource(),
 			"hetznerrobot_os_rescue":       server.ResourceOSRescue(),
 			"hetznerrobot_ssh_key":         sshkey.Resource(),
