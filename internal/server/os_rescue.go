@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
@@ -23,7 +24,7 @@ func ResourceOSRescue() *schema.Resource {
 	return &schema.Resource{
 		Description: `Reboot a server into Hetzner Robot rescue system:
 1. activate the Hetzner Robot rescue system
-2. issue a hw reset (equivalent to pressing the reset button)
+2. issue the reset selected by ` + "`reboot`" + ` (` + "`hw`" + ` by default; ` + "`sw`" + ` for a Ctrl+Alt+Del)
 3. wait for the rescue system's SSH port to come up
 4. rename the server
 
@@ -58,6 +59,20 @@ Read and Delete are no-ops, so destroying the resource does not deactivate rescu
 					"If left empty, Hetzner generates a one-shot root password (returned in `ssh_password`).",
 				Elem: &schema.Schema{Type: schema.TypeString},
 			},
+			"reboot": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "hw",
+				ForceNew:     true,
+				ValidateFunc: validation.StringInSlice([]string{"hw", "sw"}, false),
+				Description: "Reset type used to boot into the rescue system after activation. " +
+					"`hw` performs a hardware reset (equivalent to pressing the reset button on the chassis); " +
+					"`sw` sends Ctrl+Alt+Del to the running OS for a clean reboot (Linux/Unix only). " +
+					"The other Hetzner reset types (`power`, `power_long`, `man`) are not exposed here: " +
+					"`power`/`power_long` leave the server off (no rescue boot), and `man` is a manual " +
+					"support ticket with a 24-72 hour SLA. Only takes effect on Create — changing this " +
+					"forces recreate.",
+			},
 			"ip": {
 				Type:        schema.TypeString,
 				Computed:    true,
@@ -86,12 +101,7 @@ func resourceOSRescueCreate(
 	serverName := d.Get("server_name").(string)
 	serverID := d.Get("server_id").(string)
 	rescueOS := d.Get("rescue_os").(string)
-	sshKeysRaw := d.Get("ssh_keys").([]any)
-
-	sshKeys := make([]string, 0, len(sshKeysRaw))
-	for _, key := range sshKeysRaw {
-		sshKeys = append(sshKeys, key.(string))
-	}
+	sshKeys := parseSSHKeys(d.Get("ssh_keys").([]any))
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
@@ -103,10 +113,12 @@ func resourceOSRescueCreate(
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
-	err = hClient.RebootServer(ctx, serverID, "hw")
+	resetType := d.Get("reboot").(string)
+
+	err = hClient.RebootServer(ctx, serverID, resetType)
 	if err != nil {
 		return diag.FromErr(
-			fmt.Errorf("failed to reboot server %s with power reset: %w", serverID, err),
+			fmt.Errorf("failed to %s reset server %s: %w", resetType, serverID, err),
 		)
 	}
 
@@ -161,6 +173,15 @@ func resourceOSRescueUpdate(
 	}
 
 	return nil
+}
+
+func parseSSHKeys(raw []any) []string {
+	keys := make([]string, 0, len(raw))
+	for _, key := range raw {
+		keys = append(keys, key.(string))
+	}
+
+	return keys
 }
 
 func waitForSSH(
