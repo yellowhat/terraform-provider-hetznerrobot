@@ -22,7 +22,7 @@ const (
 // ResourceOSRescue defines the os_rescue terraform resource.
 func ResourceOSRescue() *schema.Resource {
 	return &schema.Resource{
-Description: `Reboot a server into Hetzner Robot rescue system:
+		Description: `Reboot a server into Hetzner Robot rescue system:
 1. activate the Hetzner Robot rescue system
 2. issue the reset (hw by default, sw for a Ctrl+Alt+Del)
 3. wait for the rescue system's SSH port to come up
@@ -65,7 +65,7 @@ Read and Delete are no-ops, so destroying the resource does not deactivate rescu
 				Default:      "hw",
 				ForceNew:     true,
 				ValidateFunc: validation.StringInSlice([]string{"hw", "sw"}, false),
-Description: `Reset type used to boot into the rescue system after activation:
+				Description: `Reset type used to boot into the rescue system after activation:
 * hw performs a hardware reset (equivalent to pressing the reset button on the chassis)
 * sw sends Ctrl+Alt+Del to the running OS for a clean reboot (Linux/Unix only)
 
@@ -99,7 +99,12 @@ func resourceOSRescueCreate(
 	serverName := d.Get("server_name").(string)
 	serverID := d.Get("server_id").(string)
 	rescueOS := d.Get("rescue_os").(string)
-	sshKeys := parseSSHKeys(d.Get("ssh_keys").([]any))
+	sshKeysRaw := d.Get("ssh_keys").([]any)
+
+	sshKeys := make([]string, 0, len(sshKeysRaw))
+	for _, key := range sshKeysRaw {
+		sshKeys = append(sshKeys, key.(string))
+	}
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
@@ -111,13 +116,9 @@ func resourceOSRescueCreate(
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
-	resetType := d.Get("reboot").(string)
-
-	err = hClient.RebootServer(ctx, serverID, resetType)
+	err = hClient.RebootServer(ctx, serverID, d.Get("reboot").(string))
 	if err != nil {
-		return diag.FromErr(
-			fmt.Errorf("failed to %s reset server %s: %w", resetType, serverID, err),
-		)
+		return diag.FromErr(fmt.Errorf("failed to reset server %s: %w", serverID, err))
 	}
 
 	err = waitForSSH(ctx, ip, waitMin*time.Minute, retryAfterSec*time.Second)
@@ -171,15 +172,6 @@ func resourceOSRescueUpdate(
 	}
 
 	return nil
-}
-
-func parseSSHKeys(raw []any) []string {
-	keys := make([]string, 0, len(raw))
-	for _, key := range raw {
-		keys = append(keys, key.(string))
-	}
-
-	return keys
 }
 
 func waitForSSH(
