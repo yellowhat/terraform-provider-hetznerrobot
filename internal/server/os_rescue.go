@@ -22,14 +22,13 @@ const (
 // ResourceOSRescue defines the os_rescue terraform resource.
 func ResourceOSRescue() *schema.Resource {
 	return &schema.Resource{
-		Description: `Reboot a server into Hetzner Robot rescue system:
-1. activate the Hetzner Robot rescue system
-2. issue the reset selected by ` + "`reboot`" + ` (` + "`hw`" + ` by default; ` + "`sw`" + ` for a Ctrl+Alt+Del)
-3. wait for the rescue system's SSH port to come up
-4. rename the server
-
-Updates only handle server_name changes; all other fields are effectively immutable.
-Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS.`,
+		Description: "Reboots a server into the Hetzner Robot rescue system. " +
+			"Create activates rescue, issues the reset selected by `reboot` (`hw` by default; " +
+			"`sw` for a Ctrl+Alt+Del), waits for the rescue system's SSH port to come up, " +
+			"and renames the server. " +
+			"Updates only handle server_name changes; all other fields are effectively immutable. " +
+			"Read and Delete are no-ops, so destroying the resource does not deactivate rescue " +
+			"mode or reboot the server back to its installed OS.",
 		CreateContext: resourceOSRescueCreate,
 		ReadContext:   schema.NoopContext,
 		UpdateContext: resourceOSRescueUpdate,
