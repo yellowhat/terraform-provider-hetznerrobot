@@ -3,12 +3,22 @@
 page_title: "hetznerrobot_os_rescue Resource - hetznerrobot"
 subcategory: ""
 description: |-
-  Reboots a server into the Hetzner Robot rescue system. Create activates rescue, issues the reset selected by reboot (hw by default; sw for a Ctrl+Alt+Del), waits for the rescue system's SSH port to come up, and renames the server. Updates only handle server_name changes; all other fields are effectively immutable. Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS.
+  Reboot a server into Hetzner Robot rescue system:
+  activate the Hetzner Robot rescue systemissue the reset (hw by default, sw for a Ctrl+Alt+Del)wait for the rescue system's SSH port to come uprename the server
+  Updates only handle server_name changes; all other fields are effectively immutable.
+  Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS.
 ---
 
 # hetznerrobot_os_rescue (Resource)
 
-Reboots a server into the Hetzner Robot rescue system. Create activates rescue, issues the reset selected by `reboot` (`hw` by default; `sw` for a Ctrl+Alt+Del), waits for the rescue system's SSH port to come up, and renames the server. Updates only handle server_name changes; all other fields are effectively immutable. Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS.
+Reboot a server into Hetzner Robot rescue system:
+1. activate the Hetzner Robot rescue system
+2. issue the reset (hw by default, sw for a Ctrl+Alt+Del)
+3. wait for the rescue system's SSH port to come up
+4. rename the server
+
+Updates only handle server_name changes; all other fields are effectively immutable.
+Read and Delete are no-ops, so destroying the resource does not deactivate rescue mode or reboot the server back to its installed OS.
 
 ## Example Usage
 
@@ -29,7 +39,11 @@ resource "hetznerrobot_os_rescue" "test" {
 
 ### Optional
 
-- `reboot` (String) Reset type used to boot into the rescue system after activation. `hw` performs a hardware reset (equivalent to pressing the reset button on the chassis); `sw` sends Ctrl+Alt+Del to the running OS for a clean reboot (Linux/Unix only). The other Hetzner reset types (`power`, `power_long`, `man`) are not exposed here: `power`/`power_long` leave the server off (no rescue boot), and `man` is a manual support ticket with a 24-72 hour SLA. Only takes effect on Create — changing this forces recreate.
+- `reboot` (String) Reset type used to boot into the rescue system after activation:
+* hw performs a hardware reset (equivalent to pressing the reset button on the chassis)
+* sw sends Ctrl+Alt+Del to the running OS for a clean reboot (Linux/Unix only)
+
+Only takes effect on Create — changing this forces recreate.
 - `rescue_os` (String) Operating system for rescue mode (e.g. linux, freebsd).
 - `ssh_keys` (List of String) List of public SSH keys to install in the rescue system's authorized_keys. If non-empty, the rescue system disables password authentication and `ssh_password` will be empty. If left empty, Hetzner generates a one-shot root password (returned in `ssh_password`).
 
