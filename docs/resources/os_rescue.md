@@ -18,9 +18,7 @@ description: |-
 Reboot a server into Hetzner Robot rescue system:
 
 1. activate the Hetzner Robot rescue system
-
 2. issue the reset (hw by default, sw for a Ctrl+Alt+Del)
-
 3. wait for the rescue system's SSH port to come up
 
 4. rename the server
