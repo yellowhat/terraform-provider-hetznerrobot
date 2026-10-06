@@ -12,6 +12,8 @@ linters:
     - lll
     # Overly strict: repeated string literals do not always benefit from constants
     - goconst
+    # Deprecated, replaced by exhaustruct_v5
+    - exhaustruct
   settings:
     depguard:
       rules:
@@ -21,8 +23,8 @@ linters:
             - github.com/yellowhat/terraform-provider-hetznerrobot
             - github.com/hashicorp/terraform-plugin-sdk/v2
             - github.com/stretchr/testify/assert
-    exhaustruct:
-      exclude:
+    exhaustruct_v5:
+      ignore-patterns:
         - "^net/http.Client$"
         # terraform internals
         - "^github.com/hashicorp/terraform-plugin-sdk/v2/diag.Diagnostic$"
