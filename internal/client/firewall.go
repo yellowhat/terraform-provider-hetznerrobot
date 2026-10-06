@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Firewall defines the body format for /firewall requests.
@@ -44,7 +43,7 @@ type FirewallResponse struct {
 	Firewall Firewall `json:"firewall"`
 }
 
-// GetFirewall returns info about from a server ip.
+// GetFirewall returns the firewall config of a server IP.
 func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firewall, error) {
 	path := "/firewall/" + ip
 
@@ -74,7 +73,8 @@ func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firew
 	return &fwResp.Firewall, nil
 }
 
-// SetFirewall sets firewall rules for a server ip.
+// SetFirewall replaces a server IP's rules and blocks until Robot reports the
+// firewall active (up to 20 minutes).
 func (c *HetznerRobotClient) SetFirewall(
 	ctx context.Context,
 	firewall Firewall,
@@ -87,7 +87,6 @@ func (c *HetznerRobotClient) SetFirewall(
 	data.Set("status", firewall.Status)
 
 	for index, rule := range firewall.Rules.Input {
-		// Default to ipv4 when the caller doesn't specify.
 		ipVersion := rule.IPVersion
 		if ipVersion == "" {
 			ipVersion = "ipv4"
@@ -152,7 +151,10 @@ func (c *HetznerRobotClient) waitForFirewallActive(
 			return nil
 		}
 
-		time.Sleep(waitDuration)
+		err = sleep(ctx, waitDuration)
+		if err != nil {
+			return err
+		}
 	}
 
 	return fmt.Errorf("timeout waiting for firewall to become active on ip: %s", ip)

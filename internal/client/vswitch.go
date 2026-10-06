@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // VSwitch defines the body format for /vswitch requests.
@@ -81,7 +80,7 @@ func (c *HetznerRobotClient) FetchVSwitchByID(
 	return vswitch, nil
 }
 
-// FetchVSwitchesByIDs returns VSwitch objects for a vSwitch ids.
+// FetchVSwitchesByIDs fetches vSwitches concurrently, sorted by ID.
 func (c *HetznerRobotClient) FetchVSwitchesByIDs(
 	ctx context.Context,
 	ids []string,
@@ -129,7 +128,7 @@ func (c *HetznerRobotClient) FetchAllVSwitches(ctx context.Context) ([]VSwitch, 
 	return vswitches, nil
 }
 
-// CreateVSwitch create a VSwitch.
+// CreateVSwitch creates a VSwitch.
 func (c *HetznerRobotClient) CreateVSwitch(
 	ctx context.Context,
 	name string,
@@ -239,7 +238,7 @@ func (c *HetznerRobotClient) DeleteVSwitch(
 	return nil
 }
 
-// AddVSwitchServers adds a server to a vSwitch.
+// AddVSwitchServers attaches servers to a vSwitch.
 func (c *HetznerRobotClient) AddVSwitchServers(
 	ctx context.Context,
 	id string,
@@ -329,7 +328,7 @@ func isVSwitchReady(servers []VSwitchServer) bool {
 	return true
 }
 
-// WaitForVSwitchReady wait for a VSwitch until ready after and update.
+// WaitForVSwitchReady polls until no server is "processing", for up to 20 minutes.
 func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
 	id string,
@@ -344,7 +343,10 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 			return nil
 		}
 
-		time.Sleep(waitDuration)
+		err = sleep(ctx, waitDuration)
+		if err != nil {
+			return err
+		}
 	}
 
 	return fmt.Errorf("timeout waiting for vSwitch %s to become ready", id)

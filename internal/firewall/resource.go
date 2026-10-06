@@ -215,7 +215,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.FromErr(fmt.Errorf("error fetching server: %w", err))
 	}
 
-	// Set a rule to allow all traffic
+	// Robot has no firewall delete; reset to allow-all instead.
 	err = hClient.SetFirewall(ctx, client.Firewall{
 		IP:                       server.IP,
 		WhitelistHetznerServices: false,
@@ -298,7 +298,6 @@ func resourceFirewallImportState(
 	return []*schema.ResourceData{d}, nil
 }
 
-// Helper functions.
 func buildFirewallRules(ruleList []any) []client.FirewallRule {
 	rules := make([]client.FirewallRule, 0, len(ruleList))
 

@@ -2,43 +2,34 @@ package client_test
 
 import (
 	"context"
+	"net/http"
+	"net/url"
+	"reflect"
 	"testing"
 
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
+
+const testFirewallJSON = `{
+  "firewall": {
+    "ip": "1.2.3.4",
+    "whitelist_hos": true,
+    "filter_ipv6": false,
+    "status": "active",
+    "rules": {
+      "input": [
+        {"ip_version": "ipv4", "name": "allow-ssh", "src_ip": "0.0.0.0/0", "dst_port": "22", "protocol": "tcp", "action": "accept"},
+        {"ip_version": null, "name": "allow-http", "src_ip": "0.0.0.0/0", "dst_port": "80", "protocol": "tcp", "action": "accept"}
+      ]
+    }
+  }
+}`
 
 //nolint:gochecknoglobals
 var testFirewall = client.Firewall{
 	IP:                       "1.2.3.4",
 	WhitelistHetznerServices: true,
 	FilterIPv6:               false,
-	Status:                   "active",
-	Rules: client.FirewallRules{
-		//exhaustruct:ignore
-		Input: []client.FirewallRule{
-			{
-				Name:     "allow-ssh",
-				SrcIP:    "0.0.0.0/0",
-				DstPort:  "22",
-				Protocol: "tcp",
-				Action:   "accept",
-			},
-			{
-				Name:     "allow-http",
-				SrcIP:    "0.0.0.0/0",
-				DstPort:  "80",
-				Protocol: "tcp",
-				Action:   "accept",
-			},
-		},
-	},
-}
-
-//nolint:gochecknoglobals
-var testFirewallIPv6 = client.Firewall{
-	IP:                       "1.2.3.4",
-	WhitelistHetznerServices: true,
-	FilterIPv6:               true,
 	Status:                   "active",
 	Rules: client.FirewallRules{
 		//exhaustruct:ignore
@@ -52,20 +43,11 @@ var testFirewallIPv6 = client.Firewall{
 				Action:    "accept",
 			},
 			{
-				IPVersion: "ipv4",
-				Name:      "allow-http",
-				SrcIP:     "0.0.0.0/0",
-				DstPort:   "80",
-				Protocol:  "tcp",
-				Action:    "accept",
-			},
-			{
-				IPVersion: "ipv6",
-				Name:      "allow-ssh-v6",
-				SrcIP:     "::/0",
-				DstPort:   "22",
-				Protocol:  "tcp",
-				Action:    "accept",
+				Name:     "allow-http",
+				SrcIP:    "0.0.0.0/0",
+				DstPort:  "80",
+				Protocol: "tcp",
+				Action:   "accept",
 			},
 		},
 	},
@@ -74,110 +56,158 @@ var testFirewallIPv6 = client.Firewall{
 func TestGetFirewall(t *testing.T) {
 	t.Parallel()
 
-	server := mockServer()
-	defer server.Close()
-
-	client := client.New(&client.ProviderConfig{
-		Username: testUsername,
-		Password: testPassword,
-		BaseURL:  server.URL,
-	})
-
-	firewall, err := client.GetFirewall(context.Background(), testFirewall.IP)
-	if err != nil {
-		t.Errorf("GetFirewall() error: %v", err)
+	tests := []struct {
+		name    string
+		status  int
+		body    string
+		want    *client.Firewall
+		wantErr string
+	}{
+		{
+			name:    "success",
+			status:  http.StatusOK,
+			body:    testFirewallJSON,
+			want:    &testFirewall,
+			wantErr: "",
+		},
+		{
+			name:    "not found",
+			status:  http.StatusNotFound,
+			body:    apiError(http.StatusNotFound, "SERVER_NOT_FOUND"),
+			want:    nil,
+			wantErr: "unexpected response status: 404",
+		},
+		{
+			name:    "invalid json",
+			status:  http.StatusOK,
+			body:    `{`,
+			want:    nil,
+			wantErr: "failed to parse firewall response",
+		},
 	}
 
-	if testFirewall.IP != firewall.IP {
-		t.Errorf("IP: want %v, got %v", testFirewall.IP, firewall.IP)
-	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
-	if testFirewall.WhitelistHetznerServices != firewall.WhitelistHetznerServices {
-		t.Errorf(
-			"WhitelistHetznerServices: want %t, got %t",
-			testFirewall.WhitelistHetznerServices,
-			firewall.WhitelistHetznerServices,
-		)
-	}
+			api := newTestClient(t, map[string]http.HandlerFunc{
+				"GET /firewall/1.2.3.4": respond(test.status, test.body),
+			})
 
-	if testFirewall.Status != firewall.Status {
-		t.Errorf("Status: want %v, got %v", testFirewall.Status, firewall.Status)
-	}
+			got, err := api.GetFirewall(context.Background(), "1.2.3.4")
+			assertErr(t, err, test.wantErr)
 
-	if len(testFirewall.Rules.Input) != len(firewall.Rules.Input) {
-		t.Errorf(
-			"Rules length: want %d, got %d",
-			len(testFirewall.Rules.Input),
-			len(firewall.Rules.Input),
-		)
-	}
-
-	for i, wantRule := range testFirewall.Rules.Input {
-		gotRule := firewall.Rules.Input[i]
-		if wantRule.Name != gotRule.Name {
-			t.Errorf("Rule[%d] Name: want %v, got %v", i, wantRule.Name, gotRule.Name)
-		}
-
-		if wantRule.SrcIP != gotRule.SrcIP {
-			t.Errorf("Rule[%d] SrcIP: want %v, got %v", i, wantRule.SrcIP, gotRule.SrcIP)
-		}
-
-		if wantRule.DstPort != gotRule.DstPort {
-			t.Errorf(
-				"Rule[%d] DstPort: want %v, got %v",
-				i,
-				wantRule.DstPort,
-				gotRule.DstPort,
-			)
-		}
-
-		if wantRule.Protocol != gotRule.Protocol {
-			t.Errorf(
-				"Rule[%d] Protocol: want %v, got %v",
-				i,
-				wantRule.Protocol,
-				gotRule.Protocol,
-			)
-		}
-
-		if wantRule.Action != gotRule.Action {
-			t.Errorf("Rule[%d] Action: want %v, got %v", i, wantRule.Action, gotRule.Action)
-		}
+			if !reflect.DeepEqual(test.want, got) {
+				t.Errorf("firewall\nwant: %+v\ngot:  %+v", test.want, got)
+			}
+		})
 	}
 }
 
 func TestSetFirewall(t *testing.T) {
 	t.Parallel()
 
-	server := mockServer()
-	defer server.Close()
+	// ip_version defaults to ipv4, empty fields are omitted.
+	wantForm := url.Values{
+		"whitelist_hos":               []string{"true"},
+		"filter_ipv6":                 []string{"false"},
+		"status":                      []string{"active"},
+		"rules[input][0][ip_version]": []string{"ipv4"},
+		"rules[input][0][name]":       []string{"allow-ssh"},
+		"rules[input][0][src_ip]":     []string{"0.0.0.0/0"},
+		"rules[input][0][dst_port]":   []string{"22"},
+		"rules[input][0][protocol]":   []string{"tcp"},
+		"rules[input][0][action]":     []string{"accept"},
+		"rules[input][1][ip_version]": []string{"ipv4"},
+		"rules[input][1][name]":       []string{"allow-http"},
+		"rules[input][1][src_ip]":     []string{"0.0.0.0/0"},
+		"rules[input][1][dst_port]":   []string{"80"},
+		"rules[input][1][protocol]":   []string{"tcp"},
+		"rules[input][1][action]":     []string{"accept"},
+	}
 
-	client := client.New(&client.ProviderConfig{
-		Username: testUsername,
-		Password: testPassword,
-		BaseURL:  server.URL,
+	api := newTestClient(t, map[string]http.HandlerFunc{
+		"POST /firewall/1.2.3.4": expectForm(t, wantForm, http.StatusAccepted, testFirewallJSON),
+		// SetFirewall polls until the firewall is active.
+		"GET /firewall/1.2.3.4": respond(http.StatusOK, testFirewallJSON),
 	})
 
-	err := client.SetFirewall(context.Background(), testFirewall)
+	err := api.SetFirewall(context.Background(), testFirewall)
 	if err != nil {
 		t.Errorf("SetFirewall() error: %v", err)
 	}
 }
 
+// Mixed rules: ip_version must not leak between indexes.
 func TestSetFirewallIPv6(t *testing.T) {
 	t.Parallel()
 
-	server := mockServer()
-	defer server.Close()
+	firewall := client.Firewall{
+		IP:                       "1.2.3.4",
+		WhitelistHetznerServices: false,
+		FilterIPv6:               true,
+		Status:                   "active",
+		Rules: client.FirewallRules{
+			//exhaustruct:ignore
+			Input: []client.FirewallRule{
+				{
+					Name:     "allow-ssh",
+					SrcIP:    "0.0.0.0/0",
+					DstPort:  "22",
+					Protocol: "tcp",
+					Action:   "accept",
+				},
+				{
+					IPVersion: "ipv6",
+					Name:      "allow-ssh-v6",
+					SrcIP:     "::/0",
+					DstPort:   "22",
+					Protocol:  "tcp",
+					Action:    "accept",
+				},
+			},
+		},
+	}
 
-	client := client.New(&client.ProviderConfig{
-		Username: testUsername,
-		Password: testPassword,
-		BaseURL:  server.URL,
+	wantForm := url.Values{
+		"whitelist_hos":               []string{"false"},
+		"filter_ipv6":                 []string{"true"},
+		"status":                      []string{"active"},
+		"rules[input][0][ip_version]": []string{"ipv4"},
+		"rules[input][0][name]":       []string{"allow-ssh"},
+		"rules[input][0][src_ip]":     []string{"0.0.0.0/0"},
+		"rules[input][0][dst_port]":   []string{"22"},
+		"rules[input][0][protocol]":   []string{"tcp"},
+		"rules[input][0][action]":     []string{"accept"},
+		"rules[input][1][ip_version]": []string{"ipv6"},
+		"rules[input][1][name]":       []string{"allow-ssh-v6"},
+		"rules[input][1][src_ip]":     []string{"::/0"},
+		"rules[input][1][dst_port]":   []string{"22"},
+		"rules[input][1][protocol]":   []string{"tcp"},
+		"rules[input][1][action]":     []string{"accept"},
+	}
+
+	api := newTestClient(t, map[string]http.HandlerFunc{
+		"POST /firewall/1.2.3.4": expectForm(t, wantForm, http.StatusOK, testFirewallJSON),
+		"GET /firewall/1.2.3.4":  respond(http.StatusOK, testFirewallJSON),
 	})
 
-	err := client.SetFirewall(context.Background(), testFirewallIPv6)
+	err := api.SetFirewall(context.Background(), firewall)
 	if err != nil {
 		t.Errorf("SetFirewall() error: %v", err)
 	}
+}
+
+func TestSetFirewallError(t *testing.T) {
+	t.Parallel()
+
+	api := newTestClient(t, map[string]http.HandlerFunc{
+		"POST /firewall/1.2.3.4": respond(
+			http.StatusConflict,
+			apiError(http.StatusConflict, "FIREWALL_IN_PROCESS"),
+		),
+	})
+
+	err := api.SetFirewall(context.Background(), testFirewall)
+	assertErr(t, err, "unexpected response status: 409")
 }

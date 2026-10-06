@@ -88,6 +88,7 @@ func (c *HetznerRobotClient) SetFailover(ctx context.Context, ip, activeServerIP
 }
 
 // DeleteFailover resets a failover IP's routing back to its primary server.
+// A 404 is treated as success.
 func (c *HetznerRobotClient) DeleteFailover(ctx context.Context, ip string) error {
 	resp, err := c.DoRequest(ctx, "DELETE", "/failover/"+url.PathEscape(ip), nil, "")
 	if err != nil {

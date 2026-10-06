@@ -265,7 +265,6 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	return nil
 }
 
-// helpers.
 func parseServerIDs(servers *schema.Set) []int {
 	result := make([]int, 0, servers.Len())
 	for _, s := range servers.List() {

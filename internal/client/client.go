@@ -14,7 +14,7 @@ const (
 	waitDuration   = 20 * time.Second
 )
 
-// ProviderConfig provides a client for interacting with the Hetzner Robot API.
+// ProviderConfig holds Robot API credentials and base URL.
 type ProviderConfig struct {
 	Username string
 	Password string
@@ -65,4 +65,17 @@ func (c *HetznerRobotClient) DoRequest(
 	}
 
 	return resp, nil
+}
+
+// sleep pauses for duration, returning early if ctx is cancelled.
+func sleep(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("wait interrupted: %w", ctx.Err())
+	case <-timer.C:
+		return nil
+	}
 }

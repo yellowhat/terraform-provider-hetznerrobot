@@ -78,7 +78,7 @@ func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Se
 	return result.Server, nil
 }
 
-// FetchServersByIDs returns Server objects for a server ids.
+// FetchServersByIDs fetches servers concurrently, sorted by server number.
 func (c *HetznerRobotClient) FetchServersByIDs(
 	ctx context.Context,
 	ids []string,
@@ -174,7 +174,7 @@ func (c *HetznerRobotClient) RenameServer(
 	return &renameResp, nil
 }
 
-// EnableRescueMode set a server in rescue mode.
+// EnableRescueMode sets a server in rescue mode.
 func (c *HetznerRobotClient) EnableRescueMode(
 	ctx context.Context,
 	serverID string,
@@ -221,7 +221,8 @@ func (c *HetznerRobotClient) EnableRescueMode(
 	return &rescueResp, nil
 }
 
-// RebootServer reboot a server.
+// RebootServer resets a server. For power and power_long it waits 30s, then
+// powers it back on.
 func (c *HetznerRobotClient) RebootServer(
 	ctx context.Context,
 	serverID string,
@@ -258,11 +259,15 @@ func (c *HetznerRobotClient) RebootServer(
 	}
 
 	if resetType == "power" || resetType == "power_long" {
+		// Let the power-off finish before sending power-on.
 		const waitDuration = 30 * time.Second
-		// Allow some time to power off
-		time.Sleep(waitDuration)
 
-		err := c.powerOnServer(ctx, serverID, endpoint)
+		err := sleep(ctx, waitDuration)
+		if err != nil {
+			return err
+		}
+
+		err = c.powerOnServer(ctx, serverID, endpoint)
 		if err != nil {
 			return fmt.Errorf("unable to power on: %w", err)
 		}
