@@ -6,7 +6,7 @@ linters:
   disable:
     - varnamelen
     - err113
-    # Duable, not now
+    # Many existing unchecked type assertions; enable later
     - forcetypeassert
     # Replaced by golines
     - lll
@@ -17,11 +17,10 @@ linters:
       rules:
         main:
           allow:
-            - $gostd  # All of go's standard library
+            - $gostd
             - github.com/yellowhat/terraform-provider-hetznerrobot
             - github.com/hashicorp/terraform-plugin-sdk/v2
             - github.com/stretchr/testify/assert
-            - github.com/getkin/kin-openapi
     exhaustruct:
       exclude:
         - "^net/http.Client$"
@@ -49,11 +48,6 @@ linters:
           - cyclop
           - funlen
           - gocognit
-      - source: "^func mockServer"
-        linters:
-          # Due to mockServer definiion
-          - cyclop
-          - funlen
       # Long as it defines the resource schema
       - source: "^func Resource"
         linters:
