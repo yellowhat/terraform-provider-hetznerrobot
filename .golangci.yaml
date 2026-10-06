@@ -17,7 +17,7 @@ linters:
       rules:
         main:
           allow:
-            - $gostd
+            - $gostd # All of go's standard library
             - github.com/yellowhat/terraform-provider-hetznerrobot
             - github.com/hashicorp/terraform-plugin-sdk/v2
             - github.com/stretchr/testify/assert

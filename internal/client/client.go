@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Poll every 20s, up to 20 minutes, while Robot applies changes.
 const (
 	waitMaxRetries = 60
 	waitDuration   = 20 * time.Second

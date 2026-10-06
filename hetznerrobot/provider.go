@@ -57,6 +57,7 @@ func Provider() *schema.Provider {
 	}
 }
 
+// providerConfigure configures the HetznerRobot Terraform provider.
 func providerConfigure(_ context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
