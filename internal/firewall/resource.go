@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 const (
@@ -127,7 +128,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	serverID := d.Get("server_id").(string)
+	serverID := tfdata.String(d.Get("server_id"))
 
 	server, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {
@@ -135,16 +136,16 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	status := "disabled"
-	if d.Get("active").(bool) {
+	if tfdata.Bool(d.Get("active")) {
 		status = statusTrue
 	}
 
-	rules := buildFirewallRules(d.Get("rule").([]any))
+	rules := buildFirewallRules(tfdata.List(d.Get("rule")))
 
 	err = hClient.SetFirewall(ctx, client.Firewall{
 		IP:                       server.IP,
-		WhitelistHetznerServices: d.Get("whitelist_hos").(bool),
-		FilterIPv6:               d.Get("filter_ipv6").(bool),
+		WhitelistHetznerServices: tfdata.Bool(d.Get("whitelist_hos")),
+		FilterIPv6:               tfdata.Bool(d.Get("filter_ipv6")),
 		Status:                   status,
 		Rules:                    client.FirewallRules{Input: rules},
 	})
@@ -163,7 +164,7 @@ func resourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Di
 		return diag.Errorf("invalid client type")
 	}
 
-	serverID := d.Get("server_id").(string)
+	serverID := tfdata.String(d.Get("server_id"))
 
 	server, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {
@@ -208,7 +209,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	serverID := d.Get("server_id").(string)
+	serverID := tfdata.String(d.Get("server_id"))
 
 	server, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {
@@ -302,18 +303,18 @@ func buildFirewallRules(ruleList []any) []client.FirewallRule {
 	rules := make([]client.FirewallRule, 0, len(ruleList))
 
 	for _, ruleMap := range ruleList {
-		ruleProps := ruleMap.(map[string]any)
+		ruleProps := tfdata.Map(ruleMap)
 		ipVersion, _ := ruleProps["ip_version"].(string)
 		rules = append(rules, client.FirewallRule{
 			IPVersion: ipVersion,
-			Name:      ruleProps["name"].(string),
-			SrcIP:     ruleProps["src_ip"].(string),
-			SrcPort:   ruleProps["src_port"].(string),
-			DstIP:     ruleProps["dst_ip"].(string),
-			DstPort:   ruleProps["dst_port"].(string),
-			Protocol:  ruleProps["protocol"].(string),
-			TCPFlags:  ruleProps["tcp_flags"].(string),
-			Action:    ruleProps["action"].(string),
+			Name:      tfdata.String(ruleProps["name"]),
+			SrcIP:     tfdata.String(ruleProps["src_ip"]),
+			SrcPort:   tfdata.String(ruleProps["src_port"]),
+			DstIP:     tfdata.String(ruleProps["dst_ip"]),
+			DstPort:   tfdata.String(ruleProps["dst_port"]),
+			Protocol:  tfdata.String(ruleProps["protocol"]),
+			TCPFlags:  tfdata.String(ruleProps["tcp_flags"]),
+			Action:    tfdata.String(ruleProps["action"]),
 		})
 	}
 

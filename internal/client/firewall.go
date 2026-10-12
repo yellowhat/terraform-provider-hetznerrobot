@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Firewall defines the body format for /firewall requests.
+// Firewall is a server's firewall config as returned by GET /firewall.
 type Firewall struct {
 	IP                       string        `json:"ip"`
 	WhitelistHetznerServices bool          `json:"whitelist_hos"`
@@ -20,12 +20,12 @@ type Firewall struct {
 	Rules                    FirewallRules `json:"rules"`
 }
 
-// FirewallRules defines the firewall rules for Firewall.
+// FirewallRules holds the input chain; Robot has no output rules.
 type FirewallRules struct {
 	Input []FirewallRule `json:"input"`
 }
 
-// FirewallRule defines a firewall rule for FirewallRules.
+// FirewallRule is one input rule; empty IPVersion is sent as "ipv4".
 type FirewallRule struct {
 	IPVersion string `json:"ip_version,omitempty"`
 	Name      string `json:"name,omitempty"`
@@ -45,7 +45,7 @@ type FirewallResponse struct {
 
 // GetFirewall returns the firewall config of a server IP.
 func (c *HetznerRobotClient) GetFirewall(ctx context.Context, ip string) (*Firewall, error) {
-	path := "/firewall/" + ip
+	path := "/firewall/" + url.PathEscape(ip)
 
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
@@ -79,7 +79,7 @@ func (c *HetznerRobotClient) SetFirewall(
 	ctx context.Context,
 	firewall Firewall,
 ) error {
-	path := "/firewall/" + firewall.IP
+	path := "/firewall/" + url.PathEscape(firewall.IP)
 
 	data := url.Values{}
 	data.Set("whitelist_hos", strconv.FormatBool(firewall.WhitelistHetznerServices))

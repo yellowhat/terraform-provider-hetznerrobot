@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 // ResourceType is the type name of the Hetzner Robot SSH key resource.
@@ -69,7 +70,11 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	key, err := hClient.CreateSSHKey(ctx, d.Get("name").(string), d.Get("data").(string))
+	key, err := hClient.CreateSSHKey(
+		ctx,
+		tfdata.String(d.Get("name")),
+		tfdata.String(d.Get("data")),
+	)
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to create ssh key: %w", err))
 	}
@@ -120,7 +125,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if d.HasChange("name") {
-		err := hClient.RenameSSHKey(ctx, d.Id(), d.Get("name").(string))
+		err := hClient.RenameSSHKey(ctx, d.Id(), tfdata.String(d.Get("name")))
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to rename ssh key %s: %w", d.Id(), err))
 		}

@@ -6,8 +6,6 @@ linters:
   disable:
     - varnamelen
     - err113
-    # Many existing unchecked type assertions; enable later
-    - forcetypeassert
     # Replaced by golines
     - lll
     # Overly strict: repeated string literals do not always benefit from constants
@@ -34,7 +32,7 @@ linters:
         - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.ResourceImporter$"
         - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.Schema$"
     tagliatelle:
-      # Hetzner uses camel casing
+      # Robot API JSON keys are snake_case
       case:
         rules:
           json: snake

@@ -25,32 +25,33 @@ const testFirewallJSON = `{
   }
 }`
 
-//nolint:gochecknoglobals
-var testFirewall = client.Firewall{
-	IP:                       "1.2.3.4",
-	WhitelistHetznerServices: true,
-	FilterIPv6:               false,
-	Status:                   "active",
-	Rules: client.FirewallRules{
-		//exhaustruct:ignore
-		Input: []client.FirewallRule{
-			{
-				IPVersion: "ipv4",
-				Name:      "allow-ssh",
-				SrcIP:     "0.0.0.0/0",
-				DstPort:   "22",
-				Protocol:  "tcp",
-				Action:    "accept",
-			},
-			{
-				Name:     "allow-http",
-				SrcIP:    "0.0.0.0/0",
-				DstPort:  "80",
-				Protocol: "tcp",
-				Action:   "accept",
+func testFirewall() client.Firewall {
+	return client.Firewall{
+		IP:                       "1.2.3.4",
+		WhitelistHetznerServices: true,
+		FilterIPv6:               false,
+		Status:                   "active",
+		Rules: client.FirewallRules{
+			//exhaustruct:ignore
+			Input: []client.FirewallRule{
+				{
+					IPVersion: "ipv4",
+					Name:      "allow-ssh",
+					SrcIP:     "0.0.0.0/0",
+					DstPort:   "22",
+					Protocol:  "tcp",
+					Action:    "accept",
+				},
+				{
+					Name:     "allow-http",
+					SrcIP:    "0.0.0.0/0",
+					DstPort:  "80",
+					Protocol: "tcp",
+					Action:   "accept",
+				},
 			},
 		},
-	},
+	}
 }
 
 func TestGetFirewall(t *testing.T) {
@@ -67,7 +68,7 @@ func TestGetFirewall(t *testing.T) {
 			name:    "success",
 			status:  http.StatusOK,
 			body:    testFirewallJSON,
-			want:    &testFirewall,
+			want:    new(testFirewall()),
 			wantErr: "",
 		},
 		{
@@ -132,7 +133,7 @@ func TestSetFirewall(t *testing.T) {
 		"GET /firewall/1.2.3.4": respond(http.StatusOK, testFirewallJSON),
 	})
 
-	err := api.SetFirewall(context.Background(), testFirewall)
+	err := api.SetFirewall(context.Background(), testFirewall())
 	if err != nil {
 		t.Errorf("SetFirewall() error: %v", err)
 	}
@@ -208,6 +209,30 @@ func TestSetFirewallError(t *testing.T) {
 		),
 	})
 
-	err := api.SetFirewall(context.Background(), testFirewall)
+	err := api.SetFirewall(context.Background(), testFirewall())
 	assertErr(t, err, "unexpected response status: 409")
+}
+
+// firewallCalls lists the firewall endpoints for allCalls.
+func firewallCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "GetFirewall",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.GetFirewall(ctx, "1.2.3.4"))
+			},
+		},
+		{
+			name:       "SetFirewall",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.SetFirewall(ctx, testFirewall())
+			},
+		},
+	}
 }

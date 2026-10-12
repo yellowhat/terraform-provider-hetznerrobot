@@ -2,10 +2,13 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -78,4 +81,100 @@ func haveSameItems(a, b []string) bool {
 	sort.Strings(b)
 
 	return reflect.DeepEqual(a, b)
+}
+
+func TestRunConcurrentTasksEmpty(t *testing.T) {
+	t.Parallel()
+
+	items, err := runConcurrentTasks(
+		context.Background(),
+		nil,
+		func(_ context.Context, id string) (string, error) {
+			t.Errorf("worker called for %s", id)
+
+			return "", nil
+		},
+	)
+	if items != nil || err != nil {
+		t.Errorf("want nil, nil; got %v, %v", items, err)
+	}
+}
+
+// Every failure is kept and unwrappable, not just the first one.
+func TestRunConcurrentTasksAllFail(t *testing.T) {
+	t.Parallel()
+
+	const count = 25
+
+	ids := make([]string, count)
+	for i := range ids {
+		ids[i] = strconv.Itoa(i)
+	}
+
+	errFail := errors.New("failed")
+
+	_, err := runConcurrentTasks(
+		context.Background(),
+		ids,
+		func(_ context.Context, id string) (string, error) {
+			return "", fmt.Errorf("id %s: %w", id, errFail)
+		},
+	)
+	if !errors.Is(err, errFail) {
+		t.Fatalf("error: want %v, got %v", errFail, err)
+	}
+
+	for _, id := range ids {
+		if !strings.Contains(err.Error(), "id "+id+":") {
+			t.Errorf("error missing id %s: %v", id, err)
+		}
+	}
+}
+
+// No more than maxConcurrent workers run at once.
+func TestRunConcurrentTasksLimit(t *testing.T) {
+	t.Parallel()
+
+	const (
+		count = 50
+		limit = 10
+	)
+
+	ids := make([]string, count)
+	for i := range ids {
+		ids[i] = strconv.Itoa(i)
+	}
+
+	var running, peak atomic.Int32
+
+	items, err := runConcurrentTasks(
+		context.Background(),
+		ids,
+		func(_ context.Context, id string) (string, error) {
+			now := running.Add(1)
+			defer running.Add(-1)
+
+			for {
+				old := peak.Load()
+				if now <= old || peak.CompareAndSwap(old, now) {
+					break
+				}
+			}
+
+			time.Sleep(time.Millisecond)
+
+			return id, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(items) != count {
+		t.Errorf("items: want %d, got %d", count, len(items))
+	}
+
+	if got := peak.Load(); got > limit {
+		t.Errorf("peak concurrency: want <= %d, got %d", limit, got)
+	}
 }

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// Server defines the body format for /server requests.
+// Server is a server as returned by GET /server.
 type Server struct {
 	IP         string `json:"server_ip"`
 	IPv6Net    string `json:"server_ipv6_net"`
@@ -41,9 +41,9 @@ type HetznerRenameResponse struct {
 	} `json:"server"`
 }
 
-// FetchServerByID returns Server object for a server id.
+// FetchServerByID returns a server by its number.
 func (c *HetznerRobotClient) FetchServerByID(ctx context.Context, id string) (Server, error) {
-	path := "/server/" + id
+	path := "/server/" + url.PathEscape(id)
 
 	resp, err := c.DoRequest(ctx, "GET", path, nil, "")
 	if err != nil {
@@ -132,13 +132,13 @@ func (c *HetznerRobotClient) FetchAllServers(ctx context.Context) ([]Server, err
 	return servers, nil
 }
 
-// RenameServer renames a server.
+// RenameServer sets the server name and returns the name Robot stored.
 func (c *HetznerRobotClient) RenameServer(
 	ctx context.Context,
 	serverID string,
 	newName string,
 ) (*HetznerRenameResponse, error) {
-	endpoint := "/server/" + serverID
+	endpoint := "/server/" + url.PathEscape(serverID)
 	data := url.Values{}
 	data.Set("server_name", newName)
 
@@ -174,14 +174,14 @@ func (c *HetznerRobotClient) RenameServer(
 	return &renameResp, nil
 }
 
-// EnableRescueMode sets a server in rescue mode.
+// EnableRescueMode arms rescue for the next boot; the server must be rebooted to enter it.
 func (c *HetznerRobotClient) EnableRescueMode(
 	ctx context.Context,
 	serverID string,
 	os string,
 	sshKeys []string,
 ) (*HetznerRescueResponse, error) {
-	endpoint := fmt.Sprintf("/boot/%s/rescue", serverID)
+	endpoint := fmt.Sprintf("/boot/%s/rescue", url.PathEscape(serverID))
 	data := url.Values{}
 	data.Set("os", os)
 
@@ -228,7 +228,7 @@ func (c *HetznerRobotClient) RebootServer(
 	serverID string,
 	resetType string,
 ) error {
-	endpoint := "/reset/" + serverID
+	endpoint := "/reset/" + url.PathEscape(serverID)
 	data := url.Values{}
 	data.Set("type", resetType)
 

@@ -24,14 +24,15 @@ const (
 }`
 )
 
-//nolint:gochecknoglobals
-var testSSHKey = client.SSHKey{
-	Name:        "key1",
-	Fingerprint: testFingerprint,
-	Type:        "ED25519",
-	Size:        256,
-	Data:        "ssh-ed25519 AAAA",
-	CreatedAt:   "2026-01-01 00:00:00",
+func testSSHKey() client.SSHKey {
+	return client.SSHKey{
+		Name:        "key1",
+		Fingerprint: testFingerprint,
+		Type:        "ED25519",
+		Size:        256,
+		Data:        "ssh-ed25519 AAAA",
+		CreatedAt:   "2026-01-01 00:00:00",
+	}
 }
 
 func TestFetchSSHKey(t *testing.T) {
@@ -49,7 +50,7 @@ func TestFetchSSHKey(t *testing.T) {
 			name:      "success",
 			status:    http.StatusOK,
 			body:      testSSHKeyJSON,
-			want:      testSSHKey,
+			want:      testSSHKey(),
 			wantErrIs: nil,
 			wantErr:   "",
 		},
@@ -108,8 +109,8 @@ func TestCreateSSHKey(t *testing.T) {
 	got, err := api.CreateSSHKey(context.Background(), "key1", "ssh-ed25519 AAAA")
 	assertErr(t, err, "")
 
-	if !reflect.DeepEqual(testSSHKey, got) {
-		t.Errorf("key\nwant: %+v\ngot:  %+v", testSSHKey, got)
+	if !reflect.DeepEqual(testSSHKey(), got) {
+		t.Errorf("key\nwant: %+v\ngot:  %+v", testSSHKey(), got)
 	}
 }
 
@@ -174,5 +175,47 @@ func TestDeleteSSHKey(t *testing.T) {
 			err := api.DeleteSSHKey(context.Background(), testFingerprint)
 			assertErr(t, err, test.wantErr)
 		})
+	}
+}
+
+// sshKeyCalls lists the SSH key endpoints for allCalls.
+func sshKeyCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "FetchSSHKey",
+			decodes:    true,
+			notFound:   client.ErrSSHKeyNotFound,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchSSHKey(ctx, "aa:bb"))
+			},
+		},
+		{
+			name:       "CreateSSHKey",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.CreateSSHKey(ctx, "key", "ssh-ed25519 AAAA"))
+			},
+		},
+		{
+			name:       "RenameSSHKey",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.RenameSSHKey(ctx, "aa:bb", "new")
+			},
+		},
+		{
+			name:       "DeleteSSHKey",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: true,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.DeleteSSHKey(ctx, "aa:bb")
+			},
+		},
 	}
 }

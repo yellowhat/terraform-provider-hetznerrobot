@@ -271,3 +271,63 @@ func TestRebootServer(t *testing.T) {
 	err = api.RebootServer(context.Background(), "2", "sw")
 	assertErr(t, err, "unexpected status code 409")
 }
+
+// serverCalls lists the server endpoints for allCalls.
+func serverCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "FetchServerByID",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchServerByID(ctx, "1"))
+			},
+		},
+		{
+			name:       "FetchServersByIDs",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchServersByIDs(ctx, []string{"1"}))
+			},
+		},
+		{
+			name:       "FetchAllServers",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchAllServers(ctx))
+			},
+		},
+		{
+			name:       "RenameServer",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.RenameServer(ctx, "1", "new"))
+			},
+		},
+		{
+			name:       "EnableRescueMode",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.EnableRescueMode(ctx, "1", "linux", []string{"aa:bb"}))
+			},
+		},
+		{
+			name:       "RebootServer",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.RebootServer(ctx, "1", "sw")
+			},
+		},
+	}
+}

@@ -2,10 +2,13 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 )
 
+// runConcurrentTasks runs worker per id, at most maxConcurrent at once.
+// Items are unordered; any error discards all items.
 func runConcurrentTasks[T any](
 	ctx context.Context,
 	ids []string,
@@ -18,6 +21,7 @@ func runConcurrentTasks[T any](
 		errs  []error
 	)
 
+	// Bounds parallel requests to stay under Robot's per-account rate limits.
 	const maxConcurrent = 10
 
 	sem := make(chan struct{}, maxConcurrent)
@@ -55,7 +59,7 @@ func runConcurrentTasks[T any](
 	wg.Wait()
 
 	if len(errs) > 0 {
-		return nil, fmt.Errorf("error fetching: %v", errs)
+		return nil, fmt.Errorf("error fetching: %w", errors.Join(errs...))
 	}
 
 	return items, nil

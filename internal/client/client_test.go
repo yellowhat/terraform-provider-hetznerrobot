@@ -77,3 +77,16 @@ func TestAuth(t *testing.T) {
 		})
 	}
 }
+
+func TestDoRequestInvalidMethod(t *testing.T) {
+	t.Parallel()
+
+	api := newTestClient(t, nil)
+
+	resp, err := api.DoRequest(context.Background(), "BAD METHOD", "/server", nil, "")
+	if err == nil {
+		_ = resp.Body.Close()
+	}
+
+	assertErr(t, err, "error creating request")
+}

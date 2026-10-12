@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// VSwitch defines the body format for /vswitch requests.
+// VSwitch is a vSwitch as returned by GET /vswitch.
 type VSwitch struct {
 	ID        int               `json:"id"`
 	Name      string            `json:"name"`
@@ -23,7 +23,7 @@ type VSwitch struct {
 	CloudNets []VSwitchCloudNet `json:"cloud_networks"`
 }
 
-// VSwitchServer defines a server for VSwitch.
+// VSwitchServer is an attached server; Status "processing" means the attach or detach is still running.
 type VSwitchServer struct {
 	ServerNumber  int    `json:"server_number,omitempty"`
 	ServerIP      string `json:"server_ip,omitempty"`
@@ -31,14 +31,14 @@ type VSwitchServer struct {
 	Status        string `json:"status,omitempty"`
 }
 
-// VSwitchSubnet defines a subnet for VSwitch.
+// VSwitchSubnet is a subnet routed to a vSwitch.
 type VSwitchSubnet struct {
 	IP      string `json:"ip"`
 	Mask    int    `json:"mask"`
 	Gateway string `json:"gateway"`
 }
 
-// VSwitchCloudNet defines a cloud network for VSwitch.
+// VSwitchCloudNet is a Hetzner Cloud network coupled to a vSwitch.
 type VSwitchCloudNet struct {
 	ID      int    `json:"id"`
 	IP      string `json:"ip"`
@@ -46,12 +46,12 @@ type VSwitchCloudNet struct {
 	Gateway string `json:"gateway"`
 }
 
-// FetchVSwitchByID returns VSwitch object for a vSwitch id.
+// FetchVSwitchByID returns a vSwitch by ID.
 func (c *HetznerRobotClient) FetchVSwitchByID(
 	ctx context.Context,
 	id string,
 ) (VSwitch, error) {
-	resp, err := c.DoRequest(ctx, "GET", "/vswitch/"+id, nil, "")
+	resp, err := c.DoRequest(ctx, "GET", "/vswitch/"+url.PathEscape(id), nil, "")
 	if err != nil {
 		return VSwitch{}, fmt.Errorf("error fetching VSwitch: %w", err)
 	}
@@ -170,7 +170,7 @@ func (c *HetznerRobotClient) CreateVSwitch(
 	return &vswitch, nil
 }
 
-// UpdateVSwitch updates a VSwitch.
+// UpdateVSwitch sets name and VLAN.
 func (c *HetznerRobotClient) UpdateVSwitch(
 	ctx context.Context,
 	id, name string,
@@ -183,7 +183,7 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 	resp, err := c.DoRequest(
 		ctx,
 		"POST",
-		"/vswitch/"+id,
+		"/vswitch/"+url.PathEscape(id),
 		strings.NewReader(data.Encode()),
 		"application/x-www-form-urlencoded",
 	)
@@ -204,7 +204,7 @@ func (c *HetznerRobotClient) UpdateVSwitch(
 	return nil
 }
 
-// DeleteVSwitch deletes a VSwitch.
+// DeleteVSwitch cancels a vSwitch on cancellationDate (YYYY-MM-DD or "now").
 func (c *HetznerRobotClient) DeleteVSwitch(
 	ctx context.Context,
 	id string,
@@ -216,7 +216,7 @@ func (c *HetznerRobotClient) DeleteVSwitch(
 	resp, err := c.DoRequest(
 		ctx,
 		"DELETE",
-		"/vswitch/"+id,
+		"/vswitch/"+url.PathEscape(id),
 		strings.NewReader(data.Encode()),
 		"application/x-www-form-urlencoded",
 	)
@@ -252,7 +252,7 @@ func (c *HetznerRobotClient) AddVSwitchServers(
 	resp, err := c.DoRequest(
 		ctx,
 		"POST",
-		fmt.Sprintf("/vswitch/%s/server", id),
+		fmt.Sprintf("/vswitch/%s/server", url.PathEscape(id)),
 		strings.NewReader(data.Encode()),
 		"application/x-www-form-urlencoded",
 	)
@@ -292,7 +292,7 @@ func (c *HetznerRobotClient) RemoveVSwitchServers(
 	resp, err := c.DoRequest(
 		ctx,
 		"DELETE",
-		fmt.Sprintf("/vswitch/%s/server", id),
+		fmt.Sprintf("/vswitch/%s/server", url.PathEscape(id)),
 		strings.NewReader(data.Encode()),
 		"application/x-www-form-urlencoded",
 	)

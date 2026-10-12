@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 const (
@@ -65,8 +66,8 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	ip := d.Get("ip").(string)
-	activeServerIP := d.Get("active_server_ip").(string)
+	ip := tfdata.String(d.Get("ip"))
+	activeServerIP := tfdata.String(d.Get("active_server_ip"))
 
 	err := hClient.SetFailover(ctx, ip, activeServerIP)
 	if err != nil {
@@ -118,7 +119,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	if d.HasChange("active_server_ip") {
-		err := hClient.SetFailover(ctx, d.Id(), d.Get("active_server_ip").(string))
+		err := hClient.SetFailover(ctx, d.Id(), tfdata.String(d.Get("active_server_ip")))
 		if err != nil {
 			return diag.FromErr(fmt.Errorf("failed to reroute failover %s: %w", d.Id(), err))
 		}
