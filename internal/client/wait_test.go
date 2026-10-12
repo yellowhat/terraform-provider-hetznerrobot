@@ -18,28 +18,30 @@ const (
 	maxPolls     = 60               // mirrors waitMaxRetries in client.go
 )
 
-//nolint:gochecknoglobals
-var (
-	firewallInProcessJSON = strings.Replace(testFirewallJSON, `"active"`, `"in process"`, 1)
-	vswitchProcessingJSON = strings.Replace(vswitchJSON(1), `"ready"`, `"processing"`, 1)
-)
+func firewallInProcessJSON() string {
+	return strings.Replace(testFirewallJSON, `"active"`, `"in process"`, 1)
+}
+
+func vswitchProcessingJSON() string {
+	return strings.Replace(vswitchJSON(1), `"ready"`, `"processing"`, 1)
+}
 
 func TestWaitForFirewallActive(t *testing.T) {
 	t.Parallel()
 
 	synctest.Test(t, func(t *testing.T) {
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON),
+			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON()),
 			"GET /firewall/1.2.3.4": sequence(
 				t,
-				respond(http.StatusOK, firewallInProcessJSON),
-				respond(http.StatusOK, firewallInProcessJSON),
+				respond(http.StatusOK, firewallInProcessJSON()),
+				respond(http.StatusOK, firewallInProcessJSON()),
 				respond(http.StatusOK, testFirewallJSON),
 			),
 		})
 
 		start := time.Now()
-		err := api.SetFirewall(context.Background(), testFirewall)
+		err := api.SetFirewall(context.Background(), testFirewall())
 		assertErr(t, err, "")
 
 		if got := time.Since(start); got != 2*pollInterval {
@@ -54,16 +56,16 @@ func TestWaitForFirewallActiveTimeout(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		polls := 0
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON),
+			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON()),
 			"GET /firewall/1.2.3.4": func(writer http.ResponseWriter, req *http.Request) {
 				polls++
 
-				respond(http.StatusOK, firewallInProcessJSON)(writer, req)
+				respond(http.StatusOK, firewallInProcessJSON())(writer, req)
 			},
 		})
 
 		start := time.Now()
-		err := api.SetFirewall(context.Background(), testFirewall)
+		err := api.SetFirewall(context.Background(), testFirewall())
 		assertErr(t, err, "timeout waiting for firewall to become active on ip: 1.2.3.4")
 
 		if polls != maxPolls {
@@ -81,15 +83,15 @@ func TestWaitForFirewallActiveCancelled(t *testing.T) {
 
 	synctest.Test(t, func(t *testing.T) {
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON),
-			"GET /firewall/1.2.3.4":  respond(http.StatusOK, firewallInProcessJSON),
+			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON()),
+			"GET /firewall/1.2.3.4":  respond(http.StatusOK, firewallInProcessJSON()),
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		start := time.Now()
-		err := api.SetFirewall(ctx, testFirewall)
+		err := api.SetFirewall(ctx, testFirewall())
 		assertErr(t, err, "wait interrupted: context deadline exceeded")
 
 		// Returns at the deadline, not at the end of the second sleep (40s).
@@ -106,7 +108,7 @@ func TestWaitForVSwitchReadyPolling(t *testing.T) {
 		api := newTestClient(t, map[string]http.HandlerFunc{
 			"GET /vswitch/1": sequence(
 				t,
-				respond(http.StatusOK, vswitchProcessingJSON),
+				respond(http.StatusOK, vswitchProcessingJSON()),
 				respond(http.StatusOK, vswitchJSON(1)),
 			),
 		})
@@ -126,7 +128,7 @@ func TestWaitForVSwitchReadyTimeout(t *testing.T) {
 
 	synctest.Test(t, func(t *testing.T) {
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON),
+			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON()),
 		})
 
 		err := api.WaitForVSwitchReady(context.Background(), "1")
@@ -204,14 +206,14 @@ func TestWaitForFirewallActiveFetchFails(t *testing.T) {
 	t.Parallel()
 
 	api := newTestClient(t, map[string]http.HandlerFunc{
-		"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON),
+		"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON()),
 		"GET /firewall/1.2.3.4": respond(
 			http.StatusInternalServerError,
 			apiError(http.StatusInternalServerError, "INTERNAL_ERROR"),
 		),
 	})
 
-	err := api.SetFirewall(context.Background(), testFirewall)
+	err := api.SetFirewall(context.Background(), testFirewall())
 	assertErr(t, err, "error checking firewall status")
 }
 
@@ -220,7 +222,7 @@ func TestWaitForVSwitchReadyCancelled(t *testing.T) {
 
 	synctest.Test(t, func(t *testing.T) {
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON),
+			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON()),
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

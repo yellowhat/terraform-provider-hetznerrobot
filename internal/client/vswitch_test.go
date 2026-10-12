@@ -275,3 +275,96 @@ func TestWaitForVSwitchReady(t *testing.T) {
 	err = api.WaitForVSwitchReady(context.Background(), "2")
 	assertErr(t, err, "error fetching VSwitch while waiting")
 }
+
+// vswitchReadCalls lists the vSwitch read endpoints for allCalls.
+func vswitchReadCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "FetchVSwitchByID",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchVSwitchByID(ctx, "1"))
+			},
+		},
+		{
+			name:       "FetchVSwitchesByIDs",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchVSwitchesByIDs(ctx, []string{"1"}))
+			},
+		},
+		{
+			name:       "FetchAllVSwitches",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchAllVSwitches(ctx))
+			},
+		},
+		{
+			name:       "WaitForVSwitchReady",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.WaitForVSwitchReady(ctx, "1")
+			},
+		},
+	}
+}
+
+// vswitchWriteCalls lists the vSwitch write endpoints for allCalls.
+func vswitchWriteCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "CreateVSwitch",
+			decodes:    true,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.CreateVSwitch(ctx, "vsw", 4000))
+			},
+		},
+		{
+			name:       "UpdateVSwitch",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.UpdateVSwitch(ctx, "1", "vsw", 4000)
+			},
+		},
+		{
+			name:       "DeleteVSwitch",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.DeleteVSwitch(ctx, "1", "now")
+			},
+		},
+		{
+			name:       "AddVSwitchServers",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.AddVSwitchServers(ctx, "1", testVSwitch(1).Servers)
+			},
+		},
+		{
+			name:       "RemoveVSwitchServers",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.RemoveVSwitchServers(ctx, "1", testVSwitch(1).Servers)
+			},
+		},
+	}
+}

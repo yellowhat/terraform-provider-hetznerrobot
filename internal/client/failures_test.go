@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"testing"
 
@@ -21,225 +22,15 @@ type apiCall struct {
 }
 
 // allCalls lists every exported endpoint method (DoRequest is tested separately).
-//
-//nolint:gochecknoglobals
-var allCalls = []apiCall{
-	{
-		name:       "FetchFailover",
-		decodes:    true,
-		notFound:   client.ErrFailoverNotFound,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchFailover(ctx, "1.2.3.4"))
-		},
-	},
-	{
-		name:       "SetFailover",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.SetFailover(ctx, "1.2.3.4", "5.6.7.8")
-		},
-	},
-	{
-		name:       "DeleteFailover",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: true,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.DeleteFailover(ctx, "1.2.3.4")
-		},
-	},
-	{
-		name:       "GetFirewall",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.GetFirewall(ctx, "1.2.3.4"))
-		},
-	},
-	{
-		name:       "SetFirewall",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.SetFirewall(ctx, testFirewall)
-		},
-	},
-	{
-		name:       "FetchServerByID",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchServerByID(ctx, "1"))
-		},
-	},
-	{
-		name:       "FetchServersByIDs",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchServersByIDs(ctx, []string{"1"}))
-		},
-	},
-	{
-		name:       "FetchAllServers",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchAllServers(ctx))
-		},
-	},
-	{
-		name:       "RenameServer",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.RenameServer(ctx, "1", "new"))
-		},
-	},
-	{
-		name:       "EnableRescueMode",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.EnableRescueMode(ctx, "1", "linux", []string{"aa:bb"}))
-		},
-	},
-	{
-		name:       "RebootServer",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.RebootServer(ctx, "1", "sw")
-		},
-	},
-	{
-		name:       "FetchSSHKey",
-		decodes:    true,
-		notFound:   client.ErrSSHKeyNotFound,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchSSHKey(ctx, "aa:bb"))
-		},
-	},
-	{
-		name:       "CreateSSHKey",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.CreateSSHKey(ctx, "key", "ssh-ed25519 AAAA"))
-		},
-	},
-	{
-		name:       "RenameSSHKey",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.RenameSSHKey(ctx, "aa:bb", "new")
-		},
-	},
-	{
-		name:       "DeleteSSHKey",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: true,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.DeleteSSHKey(ctx, "aa:bb")
-		},
-	},
-	{
-		name:       "FetchVSwitchByID",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchVSwitchByID(ctx, "1"))
-		},
-	},
-	{
-		name:       "FetchVSwitchesByIDs",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchVSwitchesByIDs(ctx, []string{"1"}))
-		},
-	},
-	{
-		name:       "FetchAllVSwitches",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.FetchAllVSwitches(ctx))
-		},
-	},
-	{
-		name:       "CreateVSwitch",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return errOnly(api.CreateVSwitch(ctx, "vsw", 4000))
-		},
-	},
-	{
-		name:       "UpdateVSwitch",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.UpdateVSwitch(ctx, "1", "vsw", 4000)
-		},
-	},
-	{
-		name:       "DeleteVSwitch",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.DeleteVSwitch(ctx, "1", "now")
-		},
-	},
-	{
-		name:       "AddVSwitchServers",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.AddVSwitchServers(ctx, "1", testVSwitch(1).Servers)
-		},
-	},
-	{
-		name:       "RemoveVSwitchServers",
-		decodes:    false,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.RemoveVSwitchServers(ctx, "1", testVSwitch(1).Servers)
-		},
-	},
-	{
-		name:       "WaitForVSwitchReady",
-		decodes:    true,
-		notFound:   nil,
-		notFoundOK: false,
-		run: func(ctx context.Context, api *client.HetznerRobotClient) error {
-			return api.WaitForVSwitchReady(ctx, "1")
-		},
-	},
+func allCalls() []apiCall {
+	return slices.Concat(
+		failoverCalls(),
+		firewallCalls(),
+		serverCalls(),
+		sshKeyCalls(),
+		vswitchReadCalls(),
+		vswitchWriteCalls(),
+	)
 }
 
 // errOnly drops a method's value, keeping its error.
@@ -254,7 +45,7 @@ func TestTransportError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		t.Run(call.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -273,7 +64,7 @@ func TestTransportError(t *testing.T) {
 func TestBodyReadError(t *testing.T) {
 	t.Parallel()
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		t.Run(call.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -296,7 +87,7 @@ func TestBodyReadError(t *testing.T) {
 func TestInvalidJSON(t *testing.T) {
 	t.Parallel()
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		if !call.decodes {
 			continue
 		}
@@ -318,7 +109,7 @@ func TestInvalidJSON(t *testing.T) {
 func TestHTTPErrorStatus(t *testing.T) {
 	t.Parallel()
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		t.Run(call.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -341,7 +132,7 @@ func TestHTTPErrorStatus(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	t.Parallel()
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		t.Run(call.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -379,7 +170,7 @@ func TestAlternateSuccessStatus(t *testing.T) {
 		"RemoveVSwitchServers": http.StatusNoContent,
 	}
 
-	for _, call := range allCalls {
+	for _, call := range allCalls() {
 		alternate, ok := alternates[call.name]
 		if !ok {
 			continue
@@ -425,7 +216,7 @@ func TestPathEscaping(t *testing.T) {
 			return errOnly(api.GetFirewall(ctx, id))
 		},
 		"SetFirewall": func(ctx context.Context, api *client.HetznerRobotClient) error {
-			firewall := testFirewall
+			firewall := testFirewall()
 			firewall.IP = id
 
 			return api.SetFirewall(ctx, firewall)

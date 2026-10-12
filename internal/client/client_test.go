@@ -83,7 +83,10 @@ func TestDoRequestInvalidMethod(t *testing.T) {
 
 	api := newTestClient(t, nil)
 
-	//nolint:bodyclose // response is nil on error
-	_, err := api.DoRequest(context.Background(), "BAD METHOD", "/server", nil, "")
+	resp, err := api.DoRequest(context.Background(), "BAD METHOD", "/server", nil, "")
+	if err == nil {
+		_ = resp.Body.Close()
+	}
+
 	assertErr(t, err, "error creating request")
 }

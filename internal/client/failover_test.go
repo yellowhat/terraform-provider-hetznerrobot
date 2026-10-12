@@ -135,3 +135,36 @@ func TestDeleteFailover(t *testing.T) {
 		})
 	}
 }
+
+// failoverCalls lists the failover endpoints for allCalls.
+func failoverCalls() []apiCall {
+	return []apiCall{
+		{
+			name:       "FetchFailover",
+			decodes:    true,
+			notFound:   client.ErrFailoverNotFound,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return errOnly(api.FetchFailover(ctx, "1.2.3.4"))
+			},
+		},
+		{
+			name:       "SetFailover",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: false,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.SetFailover(ctx, "1.2.3.4", "5.6.7.8")
+			},
+		},
+		{
+			name:       "DeleteFailover",
+			decodes:    false,
+			notFound:   nil,
+			notFoundOK: true,
+			run: func(ctx context.Context, api *client.HetznerRobotClient) error {
+				return api.DeleteFailover(ctx, "1.2.3.4")
+			},
+		},
+	}
+}
