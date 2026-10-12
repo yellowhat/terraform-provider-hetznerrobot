@@ -1,4 +1,4 @@
-// Package vswitch defines the vswitch terraform datasource and resource.
+// Package vswitch defines the vswitch data source and the vswitch and vswitch_servers resources.
 package vswitch
 
 import (
@@ -13,7 +13,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// DataSourceType is the type name of the Hetzner Robot vSwitch resource.
+// DataSourceType is the type name of the Hetzner Robot vSwitch data source.
 const DataSourceType = "hetznerrobot_vswitch"
 
 // DataSource defines the vswitch terraform datasource.

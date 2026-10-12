@@ -11,7 +11,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// DataSourceType is the type name of the Hetzner Robot Server resource.
+// DataSourceType is the type name of the Hetzner Robot server data source.
 const DataSourceType = "hetznerrobot_server"
 
 // DataSourceServers defines the servers terraform datasource.

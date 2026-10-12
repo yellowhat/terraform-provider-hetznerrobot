@@ -15,8 +15,9 @@ import (
 const (
 	// ResourceOSRescueType is the type name of the Hetzner Robot OS Rescue resource.
 	ResourceOSRescueType = "hetznerrobot_os_rescue"
-	waitMin              = 3
-	retryAfterSec        = 10
+	// After the rescue reboot, wait up to waitMin minutes for SSH, probing every retryAfterSec seconds.
+	waitMin       = 3
+	retryAfterSec = 10
 )
 
 // ResourceOSRescue defines the os_rescue terraform resource.

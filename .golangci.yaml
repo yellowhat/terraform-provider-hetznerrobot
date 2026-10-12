@@ -6,7 +6,7 @@ linters:
   disable:
     - varnamelen
     - err113
-    # Many existing unchecked type assertions; enable later
+    # d.Get() assertions are safe: the schema guarantees the type
     - forcetypeassert
     # Replaced by golines
     - lll
@@ -34,7 +34,7 @@ linters:
         - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.ResourceImporter$"
         - "^github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema.Schema$"
     tagliatelle:
-      # Hetzner uses camel casing
+      # Robot API JSON keys are snake_case
       case:
         rules:
           json: snake

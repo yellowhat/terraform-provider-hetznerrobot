@@ -13,9 +13,10 @@ import (
 
 // Wait loops sleep between polls. Inside a synctest bubble time is fake:
 // sleeps return instantly and time.Since reports the simulated duration.
-
-// Mirrors waitDuration and waitMaxRetries (60) in client.go.
-const pollInterval = 20 * time.Second
+const (
+	pollInterval = 20 * time.Second // mirrors waitDuration in client.go
+	maxPolls     = 60               // mirrors waitMaxRetries in client.go
+)
 
 //nolint:gochecknoglobals
 var (
@@ -65,12 +66,12 @@ func TestWaitForFirewallActiveTimeout(t *testing.T) {
 		err := api.SetFirewall(context.Background(), testFirewall)
 		assertErr(t, err, "timeout waiting for firewall to become active on ip: 1.2.3.4")
 
-		if polls != 60 {
-			t.Errorf("polls: want 60, got %d", polls)
+		if polls != maxPolls {
+			t.Errorf("polls: want %d, got %d", maxPolls, polls)
 		}
 
-		if got := time.Since(start); got != 60*pollInterval {
-			t.Errorf("elapsed: want %v, got %v", 60*pollInterval, got)
+		if got := time.Since(start); got != maxPolls*pollInterval {
+			t.Errorf("elapsed: want %v, got %v", maxPolls*pollInterval, got)
 		}
 	})
 }
@@ -197,4 +198,103 @@ func TestRebootServerPowerOnFails(t *testing.T) {
 		err := api.RebootServer(context.Background(), "1", "power")
 		assertErr(t, err, "unable to power on: unexpected status code 409")
 	})
+}
+
+func TestWaitForFirewallActiveFetchFails(t *testing.T) {
+	t.Parallel()
+
+	api := newTestClient(t, map[string]http.HandlerFunc{
+		"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON),
+		"GET /firewall/1.2.3.4": respond(
+			http.StatusInternalServerError,
+			apiError(http.StatusInternalServerError, "INTERNAL_ERROR"),
+		),
+	})
+
+	err := api.SetFirewall(context.Background(), testFirewall)
+	assertErr(t, err, "error checking firewall status")
+}
+
+func TestWaitForVSwitchReadyCancelled(t *testing.T) {
+	t.Parallel()
+
+	synctest.Test(t, func(t *testing.T) {
+		api := newTestClient(t, map[string]http.HandlerFunc{
+			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON),
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		err := api.WaitForVSwitchReady(ctx, "1")
+		assertErr(t, err, "wait interrupted")
+		assertErrIs(t, err, context.DeadlineExceeded)
+	})
+}
+
+func TestRebootServerPowerCancelled(t *testing.T) {
+	t.Parallel()
+
+	synctest.Test(t, func(t *testing.T) {
+		// Only the power-off request is expected: power-on is never sent.
+		api := newTestClient(t, map[string]http.HandlerFunc{
+			"POST /reset/1": sequence(t, respond(http.StatusOK, "")),
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		err := api.RebootServer(ctx, "1", "power")
+		assertErr(t, err, "wait interrupted")
+		assertErrIs(t, err, context.DeadlineExceeded)
+	})
+}
+
+func TestRebootServerPowerOnRequestFails(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		powerOn func(req *http.Request) (*http.Response, error)
+		wantIs  error
+	}{
+		{
+			name: "transport error",
+			powerOn: func(*http.Request) (*http.Response, error) {
+				return nil, errTransport
+			},
+			wantIs: errTransport,
+		},
+		{
+			name:    "unreadable body",
+			powerOn: failingBodyTransport{status: http.StatusInternalServerError}.RoundTrip,
+			wantIs:  errBodyRead,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			synctest.Test(t, func(t *testing.T) {
+				api := newTestClient(t, map[string]http.HandlerFunc{
+					"POST /reset/1": respond(http.StatusOK, ""),
+				})
+				powerOff := api.Client.Transport.RoundTrip
+				responses := []roundTripFunc{powerOff, test.powerOn}
+				api.Client.Transport = roundTripFunc(
+					func(req *http.Request) (*http.Response, error) {
+						next := responses[0]
+						responses = responses[1:]
+
+						return next(req)
+					},
+				)
+
+				err := api.RebootServer(context.Background(), "1", "power")
+				assertErr(t, err, "unable to power on")
+				assertErrIs(t, err, test.wantIs)
+			})
+		})
+	}
 }

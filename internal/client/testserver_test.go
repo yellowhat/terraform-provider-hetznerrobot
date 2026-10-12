@@ -182,3 +182,49 @@ func assertErr(t *testing.T, err error, wantErr string) {
 		t.Errorf("error: want containing %q, got %v", wantErr, err)
 	}
 }
+
+// errBodyRead is returned by failingBody reads.
+var errBodyRead = errors.New("body read failed")
+
+// failingBody is a response body whose reads always fail.
+type failingBody struct{}
+
+func (failingBody) Read([]byte) (int, error) { return 0, errBodyRead }
+
+func (failingBody) Close() error { return nil }
+
+// failingBodyTransport answers every request with status and a failingBody.
+type failingBodyTransport struct {
+	status int
+}
+
+func (f failingBodyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	//exhaustruct:ignore
+	return &http.Response{
+		StatusCode: f.status,
+		Header:     http.Header{},
+		Body:       failingBody{},
+		Request:    req,
+	}, nil
+}
+
+// newFailingBodyClient returns a client whose responses have the given status
+// and a body that cannot be read.
+func newFailingBodyClient(status int) *client.HetznerRobotClient {
+	api := client.New(&client.ProviderConfig{
+		Username: testUsername,
+		Password: testPassword,
+		BaseURL:  "http://robot.test",
+	})
+	api.Client.Transport = failingBodyTransport{status: status}
+
+	return api
+}
+
+// roundTripFunc adapts a function to http.RoundTripper.
+type roundTripFunc func(req *http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+// errTransport is returned by transports simulating a network failure.
+var errTransport = errors.New("connection refused")

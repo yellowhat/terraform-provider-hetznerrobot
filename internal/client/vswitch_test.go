@@ -126,6 +126,24 @@ func TestFetchAllVSwitches(t *testing.T) {
 	}
 }
 
+func TestFetchAllVSwitchesError(t *testing.T) {
+	t.Parallel()
+
+	api := newTestClient(t, map[string]http.HandlerFunc{
+		"GET /vswitch": respond(
+			http.StatusInternalServerError,
+			apiError(http.StatusInternalServerError, "INTERNAL_ERROR"),
+		),
+	})
+
+	got, err := api.FetchAllVSwitches(context.Background())
+	assertErr(t, err, "error fetching vSwitches: status 500")
+
+	if got != nil {
+		t.Errorf("vswitches: want nil, got %+v", got)
+	}
+}
+
 func TestCreateVSwitch(t *testing.T) {
 	t.Parallel()
 
