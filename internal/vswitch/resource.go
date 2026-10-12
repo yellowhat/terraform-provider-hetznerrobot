@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 const (
@@ -65,12 +66,12 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	name := d.Get("name").(string)
+	name := tfdata.String(d.Get("name"))
 
 	var chosenVLAN int
 
 	if vlan, vlanProvided := d.GetOk("vlan"); vlanProvided {
-		chosenVLAN = vlan.(int)
+		chosenVLAN = tfdata.Int(vlan)
 	} else {
 		freeVLAN, err := pickRandomFreeVLAN(ctx, hClient)
 		if err != nil {
@@ -93,7 +94,7 @@ func resourceCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	vswID := strconv.Itoa(vsw.ID)
 
 	if servers, ok := d.GetOk("servers"); ok {
-		serverIDs := parseServerIDs(servers.(*schema.Set))
+		serverIDs := parseServerIDs(tfdata.Set(servers))
 
 		serverObjects := parseServerIDsToVSwitchServers(serverIDs)
 		if len(serverObjects) > 0 {
@@ -171,8 +172,8 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 	}
 
 	id := d.Id()
-	name := d.Get("name").(string)
-	vlan := d.Get("vlan").(int)
+	name := tfdata.String(d.Get("name"))
+	vlan := tfdata.Int(d.Get("vlan"))
 
 	var waitForReady bool
 
@@ -184,7 +185,7 @@ func resourceUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.
 			return diag.FromErr(fmt.Errorf("error updating vSwitch: %w", err))
 		}
 
-		if vlan != oldVlan.(int) {
+		if vlan != tfdata.Int(oldVlan) {
 			waitForReady = true
 		}
 	}
@@ -216,8 +217,8 @@ func manageServers(
 	id string,
 ) diag.Diagnostics {
 	oldRaw, newRaw := d.GetChange("servers")
-	oldServers := parseServerIDs(oldRaw.(*schema.Set))
-	newServers := parseServerIDs(newRaw.(*schema.Set))
+	oldServers := parseServerIDs(tfdata.Set(oldRaw))
+	newServers := parseServerIDs(tfdata.Set(newRaw))
 
 	toAdd, toRemove := diffServers(oldServers, newServers)
 
@@ -250,7 +251,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 
 	id := d.Id()
 
-	cancellationDate := d.Get("cancellation_date").(string)
+	cancellationDate := tfdata.String(d.Get("cancellation_date"))
 	if cancellationDate == "" {
 		cancellationDate = "now"
 	}
@@ -268,7 +269,7 @@ func resourceDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.
 func parseServerIDs(servers *schema.Set) []int {
 	result := make([]int, 0, servers.Len())
 	for _, s := range servers.List() {
-		result = append(result, s.(int))
+		result = append(result, tfdata.Int(s))
 	}
 
 	return result

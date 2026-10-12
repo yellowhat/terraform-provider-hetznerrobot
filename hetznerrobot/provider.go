@@ -11,6 +11,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/firewall"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/server"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/sshkey"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/vswitch"
 )
 
@@ -61,9 +62,9 @@ func Provider() *schema.Provider {
 func providerConfigure(_ context.Context, d *schema.ResourceData) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	url := d.Get("url").(string)
+	username := tfdata.String(d.Get("username"))
+	password := tfdata.String(d.Get("password"))
+	url := tfdata.String(d.Get("url"))
 
 	if username == "" || password == "" {
 		diags = append(diags, diag.Diagnostic{

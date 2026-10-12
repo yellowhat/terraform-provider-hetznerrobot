@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 const (
@@ -98,15 +99,10 @@ func resourceOSRescueCreate(
 		return diag.Errorf("invalid client type")
 	}
 
-	serverName := d.Get("server_name").(string)
-	serverID := d.Get("server_id").(string)
-	rescueOS := d.Get("rescue_os").(string)
-	sshKeysRaw := d.Get("ssh_keys").([]any)
-
-	sshKeys := make([]string, 0, len(sshKeysRaw))
-	for _, key := range sshKeysRaw {
-		sshKeys = append(sshKeys, key.(string))
-	}
+	serverName := tfdata.String(d.Get("server_name"))
+	serverID := tfdata.String(d.Get("server_id"))
+	rescueOS := tfdata.String(d.Get("rescue_os"))
+	sshKeys := tfdata.Strings(d.Get("ssh_keys"))
 
 	rescueResp, err := hClient.EnableRescueMode(ctx, serverID, rescueOS, sshKeys)
 	if err != nil {
@@ -118,7 +114,7 @@ func resourceOSRescueCreate(
 	ip := rescueResp.Rescue.ServerIP
 	pass := rescueResp.Rescue.Password
 
-	err = hClient.RebootServer(ctx, serverID, d.Get("reboot").(string))
+	err = hClient.RebootServer(ctx, serverID, tfdata.String(d.Get("reboot")))
 	if err != nil {
 		return diag.FromErr(fmt.Errorf("failed to reset server %s: %w", serverID, err))
 	}
@@ -158,8 +154,8 @@ func resourceOSRescueUpdate(
 		return diag.Errorf("invalid client type")
 	}
 
-	serverName := d.Get("server_name").(string)
-	serverID := d.Get("server_id").(string)
+	serverName := tfdata.String(d.Get("server_name"))
+	serverID := tfdata.String(d.Get("server_id"))
 
 	serverInfo, err := hClient.FetchServerByID(ctx, serverID)
 	if err != nil {

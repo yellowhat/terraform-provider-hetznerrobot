@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 // DataSourceType is the type name of the Hetzner Robot vSwitch data source.
@@ -52,12 +53,7 @@ func dataSourceRead(ctx context.Context, d *schema.ResourceData, meta any) diag.
 		return diag.Errorf("invalid client type")
 	}
 
-	idsInterface := d.Get("ids").([]any)
-	ids := make([]string, 0, len(idsInterface))
-
-	for _, id := range idsInterface {
-		ids = append(ids, id.(string))
-	}
+	ids := tfdata.Strings(d.Get("ids"))
 
 	var (
 		vswitches []client.VSwitch

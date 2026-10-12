@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 const (
@@ -51,10 +52,10 @@ func resourceServersCreate(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.Errorf("invalid client type")
 	}
 
-	vswID := d.Get("vswitch_id").(string)
+	vswID := tfdata.String(d.Get("vswitch_id"))
 
 	servers := d.Get("servers")
-	serverIDs := parseServerIDs(servers.(*schema.Set))
+	serverIDs := parseServerIDs(tfdata.Set(servers))
 	serverObjs := parseServerIDsToVSwitchServers(serverIDs)
 
 	err := hClient.AddVSwitchServers(ctx, vswID, serverObjs)
@@ -92,7 +93,7 @@ func resourceServersRead(ctx context.Context, d *schema.ResourceData, meta any) 
 		return diag.FromErr(fmt.Errorf("error setting vswitch_id attribute: %w", err))
 	}
 
-	if !d.Get("include_unmanaged").(bool) {
+	if !tfdata.Bool(d.Get("include_unmanaged")) {
 		return nil
 	}
 
@@ -144,7 +145,7 @@ func resourceServersDelete(ctx context.Context, d *schema.ResourceData, meta any
 
 	id := d.Id()
 	servers := d.Get("servers")
-	serverIDs := parseServerIDs(servers.(*schema.Set))
+	serverIDs := parseServerIDs(tfdata.Set(servers))
 	serverObjs := parseServerIDsToVSwitchServers(serverIDs)
 
 	err := hClient.RemoveVSwitchServers(ctx, id, serverObjs)

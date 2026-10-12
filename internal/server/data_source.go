@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/tfdata"
 )
 
 // DataSourceType is the type name of the Hetzner Robot server data source.
@@ -52,12 +53,7 @@ func dataSourceServersRead(ctx context.Context, d *schema.ResourceData, meta any
 		return diag.Errorf("invalid client type")
 	}
 
-	rawIDs := d.Get("ids").([]any)
-	ids := make([]string, 0, len(rawIDs))
-
-	for _, v := range rawIDs {
-		ids = append(ids, v.(string))
-	}
+	ids := tfdata.Strings(d.Get("ids"))
 
 	var (
 		servers []client.Server
