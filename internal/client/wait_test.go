@@ -9,13 +9,15 @@ import (
 	"testing"
 	"testing/synctest"
 	"time"
+
+	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
 // Wait loops sleep between polls. Inside a synctest bubble time is fake:
 // sleeps return instantly and time.Since reports the simulated duration.
 const (
-	pollInterval = 20 * time.Second // mirrors waitDuration in client.go
-	maxPolls     = 60               // mirrors waitMaxRetries in client.go
+	pollInterval = client.WaitDuration
+	maxPolls     = client.WaitMaxRetries
 )
 
 func firewallInProcessJSON() string {
@@ -57,11 +59,10 @@ func TestWaitForFirewallActiveTimeout(t *testing.T) {
 		polls := 0
 		api := newTestClient(t, map[string]http.HandlerFunc{
 			"POST /firewall/1.2.3.4": respond(http.StatusOK, firewallInProcessJSON()),
-			"GET /firewall/1.2.3.4": func(writer http.ResponseWriter, req *http.Request) {
-				polls++
-
-				respond(http.StatusOK, firewallInProcessJSON())(writer, req)
-			},
+			"GET /firewall/1.2.3.4": counting(
+				&polls,
+				respond(http.StatusOK, firewallInProcessJSON()),
+			),
 		})
 
 		start := time.Now()
@@ -72,8 +73,8 @@ func TestWaitForFirewallActiveTimeout(t *testing.T) {
 			t.Errorf("polls: want %d, got %d", maxPolls, polls)
 		}
 
-		if got := time.Since(start); got != maxPolls*pollInterval {
-			t.Errorf("elapsed: want %v, got %v", maxPolls*pollInterval, got)
+		if got := time.Since(start); got != (maxPolls-1)*pollInterval {
+			t.Errorf("elapsed: want %v, got %v", (maxPolls-1)*pollInterval, got)
 		}
 	})
 }
@@ -127,12 +128,22 @@ func TestWaitForVSwitchReadyTimeout(t *testing.T) {
 	t.Parallel()
 
 	synctest.Test(t, func(t *testing.T) {
+		polls := 0
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON()),
+			"GET /vswitch/1": counting(&polls, respond(http.StatusOK, vswitchProcessingJSON())),
 		})
 
+		start := time.Now()
 		err := api.WaitForVSwitchReady(context.Background(), "1")
 		assertErr(t, err, "timeout waiting for vSwitch 1 to become ready")
+
+		if polls != maxPolls {
+			t.Errorf("polls: want %d, got %d", maxPolls, polls)
+		}
+
+		if got := time.Since(start); got != (maxPolls-1)*pollInterval {
+			t.Errorf("elapsed: want %v, got %v", (maxPolls-1)*pollInterval, got)
+		}
 	})
 }
 
@@ -176,6 +187,7 @@ func TestRebootServerPower(t *testing.T) {
 				err := api.RebootServer(context.Background(), "1", resetType)
 				assertErr(t, err, "")
 
+				// RebootServer waits 30s between power-off and power-on.
 				want := []time.Duration{0, 30 * time.Second}
 				if !slices.Equal(want, calls) {
 					t.Errorf("call times: want %v, got %v", want, calls)
@@ -243,6 +255,7 @@ func TestRebootServerPowerCancelled(t *testing.T) {
 			"POST /reset/1": sequence(t, respond(http.StatusOK, "")),
 		})
 
+		// Expires during the 30s power-off wait.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 

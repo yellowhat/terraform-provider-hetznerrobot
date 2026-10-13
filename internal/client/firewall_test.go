@@ -72,6 +72,13 @@ func TestGetFirewall(t *testing.T) {
 			wantErr: "",
 		},
 		{
+			name:    "accepted",
+			status:  http.StatusAccepted,
+			body:    testFirewallJSON,
+			want:    new(testFirewall()),
+			wantErr: "",
+		},
+		{
 			name:    "not found",
 			status:  http.StatusNotFound,
 			body:    apiError(http.StatusNotFound, "SERVER_NOT_FOUND"),
@@ -213,7 +220,6 @@ func TestSetFirewallError(t *testing.T) {
 	assertErr(t, err, "unexpected response status: 409")
 }
 
-// firewallCalls lists the firewall endpoints for allCalls.
 func firewallCalls() []apiCall {
 	return []apiCall{
 		{

@@ -12,7 +12,7 @@ import (
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
 )
 
-// apiCall invokes one client method, keeping only its error.
+// apiCall wraps one client method and how it reacts to error statuses.
 type apiCall struct {
 	name       string
 	decodes    bool  // parses a JSON body on 200
@@ -22,6 +22,7 @@ type apiCall struct {
 }
 
 // allCalls lists every exported endpoint method (DoRequest is tested separately).
+// New endpoint methods must be added here to get failure-path coverage.
 func allCalls() []apiCall {
 	return slices.Concat(
 		failoverCalls(),
@@ -158,17 +159,22 @@ func TestNotFound(t *testing.T) {
 func TestAlternateSuccessStatus(t *testing.T) {
 	t.Parallel()
 
-	// Statuses besides 200 that each method treats as success.
-	alternates := map[string]int{
-		"GetFirewall":          http.StatusAccepted,
-		"SetFirewall":          http.StatusAccepted,
-		"CreateSSHKey":         http.StatusCreated,
-		"CreateVSwitch":        http.StatusCreated,
-		"UpdateVSwitch":        http.StatusCreated,
-		"DeleteVSwitch":        http.StatusNoContent,
-		"AddVSwitchServers":    http.StatusCreated,
-		"RemoveVSwitchServers": http.StatusNoContent,
+	// Non-200 success statuses with realistic bodies.
+	alternates := map[string]struct {
+		status int
+		body   string
+	}{
+		"GetFirewall":          {http.StatusAccepted, testFirewallJSON},
+		"SetFirewall":          {http.StatusAccepted, testFirewallJSON},
+		"CreateSSHKey":         {http.StatusCreated, testSSHKeyJSON},
+		"CreateVSwitch":        {http.StatusCreated, vswitchJSON(1)},
+		"UpdateVSwitch":        {http.StatusCreated, ""},
+		"DeleteVSwitch":        {http.StatusNoContent, ""},
+		"AddVSwitchServers":    {http.StatusCreated, ""},
+		"RemoveVSwitchServers": {http.StatusNoContent, ""},
 	}
+
+	seen := map[string]bool{}
 
 	for _, call := range allCalls() {
 		alternate, ok := alternates[call.name]
@@ -176,18 +182,26 @@ func TestAlternateSuccessStatus(t *testing.T) {
 			continue
 		}
 
-		for _, status := range []int{http.StatusOK, alternate} {
+		seen[call.name] = true
+
+		for _, status := range []int{http.StatusOK, alternate.status} {
 			t.Run(fmt.Sprintf("%s/%d", call.name, status), func(t *testing.T) {
 				t.Parallel()
 
-				// Any JSON object decodes; the firewall one also ends SetFirewall's wait.
+				// "/" also serves SetFirewall's follow-up GET, ending its wait.
 				api := newTestClient(t, map[string]http.HandlerFunc{
-					"/": respond(status, testFirewallJSON),
+					"/": respond(status, alternate.body),
 				})
 
 				err := call.run(context.Background(), api)
 				assertErr(t, err, "")
 			})
+		}
+	}
+
+	for name := range alternates {
+		if !seen[name] {
+			t.Errorf("alternates[%q] matches no call in allCalls", name)
 		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
@@ -97,20 +98,26 @@ func TestFetchSSHKey(t *testing.T) {
 func TestCreateSSHKey(t *testing.T) {
 	t.Parallel()
 
-	api := newTestClient(t, map[string]http.HandlerFunc{
-		"POST /key": expectForm(
-			t,
-			url.Values{"name": []string{"key1"}, "data": []string{"ssh-ed25519 AAAA"}},
-			http.StatusCreated,
-			testSSHKeyJSON,
-		),
-	})
+	for _, status := range []int{http.StatusOK, http.StatusCreated} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			t.Parallel()
 
-	got, err := api.CreateSSHKey(context.Background(), "key1", "ssh-ed25519 AAAA")
-	assertErr(t, err, "")
+			api := newTestClient(t, map[string]http.HandlerFunc{
+				"POST /key": expectForm(
+					t,
+					url.Values{"name": []string{"key1"}, "data": []string{"ssh-ed25519 AAAA"}},
+					status,
+					testSSHKeyJSON,
+				),
+			})
 
-	if !reflect.DeepEqual(testSSHKey(), got) {
-		t.Errorf("key\nwant: %+v\ngot:  %+v", testSSHKey(), got)
+			got, err := api.CreateSSHKey(context.Background(), "key1", "ssh-ed25519 AAAA")
+			assertErr(t, err, "")
+
+			if !reflect.DeepEqual(testSSHKey(), got) {
+				t.Errorf("key\nwant: %+v\ngot:  %+v", testSSHKey(), got)
+			}
+		})
 	}
 }
 
@@ -178,7 +185,6 @@ func TestDeleteSSHKey(t *testing.T) {
 	}
 }
 
-// sshKeyCalls lists the SSH key endpoints for allCalls.
 func sshKeyCalls() []apiCall {
 	return []apiCall{
 		{

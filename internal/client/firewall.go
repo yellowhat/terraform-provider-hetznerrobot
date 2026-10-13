@@ -141,7 +141,15 @@ func (c *HetznerRobotClient) waitForFirewallActive(
 	ctx context.Context,
 	ip string,
 ) error {
-	for range waitMaxRetries {
+	for attempt := range WaitMaxRetries {
+		// Sleep between polls only, so a timeout returns right after the last one.
+		if attempt > 0 {
+			err := sleep(ctx, WaitDuration)
+			if err != nil {
+				return err
+			}
+		}
+
 		firewall, err := c.GetFirewall(ctx, ip)
 		if err != nil {
 			return fmt.Errorf("error checking firewall status: %w", err)
@@ -149,11 +157,6 @@ func (c *HetznerRobotClient) waitForFirewallActive(
 
 		if firewall.Status == "active" {
 			return nil
-		}
-
-		err = sleep(ctx, waitDuration)
-		if err != nil {
-			return err
 		}
 	}
 
