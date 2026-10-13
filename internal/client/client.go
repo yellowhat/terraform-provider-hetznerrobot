@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+// Poll budget for async Robot operations (firewall, vSwitch):
+// WaitMaxRetries polls, WaitDuration apart.
 const (
 	WaitMaxRetries = 60
 	WaitDuration   = 20 * time.Second
