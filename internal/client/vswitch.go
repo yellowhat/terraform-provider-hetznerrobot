@@ -333,7 +333,15 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 	ctx context.Context,
 	id string,
 ) error {
-	for range waitMaxRetries {
+	for attempt := range WaitMaxRetries {
+		// Sleep between polls only, so a timeout returns right after the last one.
+		if attempt > 0 {
+			err := sleep(ctx, WaitDuration)
+			if err != nil {
+				return err
+			}
+		}
+
 		vsw, err := c.FetchVSwitchByID(ctx, id)
 		if err != nil {
 			return fmt.Errorf("error fetching VSwitch while waiting: %w", err)
@@ -341,11 +349,6 @@ func (c *HetznerRobotClient) WaitForVSwitchReady(
 
 		if isVSwitchReady(vsw.Servers) {
 			return nil
-		}
-
-		err = sleep(ctx, waitDuration)
-		if err != nil {
-			return err
 		}
 	}
 

@@ -7,6 +7,9 @@ import (
 	"sync"
 )
 
+// maxConcurrent caps in-flight requests; it does not enforce Robot's hourly rate limits.
+const maxConcurrent = 10
+
 // runConcurrentTasks runs worker per id, at most maxConcurrent at once.
 // Items are unordered; any error discards all items.
 func runConcurrentTasks[T any](
@@ -20,9 +23,6 @@ func runConcurrentTasks[T any](
 		items []T
 		errs  []error
 	)
-
-	// Caps in-flight requests; does not enforce Robot's hourly rate limits.
-	const maxConcurrent = 10
 
 	sem := make(chan struct{}, maxConcurrent)
 

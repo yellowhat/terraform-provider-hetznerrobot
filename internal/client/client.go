@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	waitMaxRetries = 60
-	waitDuration   = 20 * time.Second
+	WaitMaxRetries = 60
+	WaitDuration   = 20 * time.Second
 )
 
 // ProviderConfig holds Robot API credentials and base URL.

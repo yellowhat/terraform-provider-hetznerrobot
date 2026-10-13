@@ -139,10 +139,7 @@ func TestRunConcurrentTasksAllFail(t *testing.T) {
 func TestRunConcurrentTasksLimit(t *testing.T) {
 	t.Parallel()
 
-	const (
-		count = 50
-		limit = 10 // mirrors maxConcurrent in helpers.go
-	)
+	const count = 50
 
 	ids := make([]string, count)
 	for i := range ids {
@@ -181,12 +178,12 @@ func TestRunConcurrentTasksLimit(t *testing.T) {
 			t.Errorf("items: want %d, got %d", count, len(items))
 		}
 
-		if got := peak.Load(); got != limit {
-			t.Errorf("peak concurrency: want %d, got %d", limit, got)
+		if got := peak.Load(); got != maxConcurrent {
+			t.Errorf("peak concurrency: want %d, got %d", maxConcurrent, got)
 		}
 
-		// count/limit batches of one second each.
-		if got, want := time.Since(start), count/limit*time.Second; got != want {
+		// count/maxConcurrent batches of one second each.
+		if got, want := time.Since(start), count/maxConcurrent*time.Second; got != want {
 			t.Errorf("elapsed: want %v, got %v", want, got)
 		}
 	})

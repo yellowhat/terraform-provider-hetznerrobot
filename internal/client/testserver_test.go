@@ -119,6 +119,15 @@ func sequence(t *testing.T, handlers ...http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// counting wraps handler, incrementing *n on each request.
+func counting(n *int, handler http.HandlerFunc) http.HandlerFunc {
+	return func(writer http.ResponseWriter, req *http.Request) {
+		*n++
+
+		handler(writer, req)
+	}
+}
+
 // apiError returns a Robot API error body.
 func apiError(status int, code string) string {
 	return fmt.Sprintf(

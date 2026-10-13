@@ -22,6 +22,7 @@ type apiCall struct {
 }
 
 // allCalls lists every exported endpoint method (DoRequest is tested separately).
+// New endpoint methods must be added here to get failure-path coverage.
 func allCalls() []apiCall {
 	return slices.Concat(
 		failoverCalls(),
@@ -158,8 +159,7 @@ func TestNotFound(t *testing.T) {
 func TestAlternateSuccessStatus(t *testing.T) {
 	t.Parallel()
 
-	// Non-200 success statuses with realistic bodies; decoded values are
-	// checked in the per-method tests.
+	// Non-200 success statuses with realistic bodies.
 	alternates := map[string]struct {
 		status int
 		body   string
@@ -174,11 +174,15 @@ func TestAlternateSuccessStatus(t *testing.T) {
 		"RemoveVSwitchServers": {http.StatusNoContent, ""},
 	}
 
+	seen := map[string]bool{}
+
 	for _, call := range allCalls() {
 		alternate, ok := alternates[call.name]
 		if !ok {
 			continue
 		}
+
+		seen[call.name] = true
 
 		for _, status := range []int{http.StatusOK, alternate.status} {
 			t.Run(fmt.Sprintf("%s/%d", call.name, status), func(t *testing.T) {
@@ -192,6 +196,12 @@ func TestAlternateSuccessStatus(t *testing.T) {
 				err := call.run(context.Background(), api)
 				assertErr(t, err, "")
 			})
+		}
+	}
+
+	for name := range alternates {
+		if !seen[name] {
+			t.Errorf("alternates[%q] matches no call in allCalls", name)
 		}
 	}
 }
