@@ -272,7 +272,6 @@ func TestRebootServer(t *testing.T) {
 	assertErr(t, err, "unexpected status code 409")
 }
 
-// serverCalls lists the server endpoints for allCalls.
 func serverCalls() []apiCall {
 	return []apiCall{
 		{

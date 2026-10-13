@@ -136,7 +136,6 @@ func TestDeleteFailover(t *testing.T) {
 	}
 }
 
-// failoverCalls lists the failover endpoints for allCalls.
 func failoverCalls() []apiCall {
 	return []apiCall{
 		{

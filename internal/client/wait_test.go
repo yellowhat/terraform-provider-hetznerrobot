@@ -127,12 +127,26 @@ func TestWaitForVSwitchReadyTimeout(t *testing.T) {
 	t.Parallel()
 
 	synctest.Test(t, func(t *testing.T) {
+		polls := 0
 		api := newTestClient(t, map[string]http.HandlerFunc{
-			"GET /vswitch/1": respond(http.StatusOK, vswitchProcessingJSON()),
+			"GET /vswitch/1": func(writer http.ResponseWriter, req *http.Request) {
+				polls++
+
+				respond(http.StatusOK, vswitchProcessingJSON())(writer, req)
+			},
 		})
 
+		start := time.Now()
 		err := api.WaitForVSwitchReady(context.Background(), "1")
 		assertErr(t, err, "timeout waiting for vSwitch 1 to become ready")
+
+		if polls != maxPolls {
+			t.Errorf("polls: want %d, got %d", maxPolls, polls)
+		}
+
+		if got := time.Since(start); got != maxPolls*pollInterval {
+			t.Errorf("elapsed: want %v, got %v", maxPolls*pollInterval, got)
+		}
 	})
 }
 
@@ -176,6 +190,7 @@ func TestRebootServerPower(t *testing.T) {
 				err := api.RebootServer(context.Background(), "1", resetType)
 				assertErr(t, err, "")
 
+				// RebootServer waits 30s between power-off and power-on.
 				want := []time.Duration{0, 30 * time.Second}
 				if !slices.Equal(want, calls) {
 					t.Errorf("call times: want %v, got %v", want, calls)
@@ -243,6 +258,7 @@ func TestRebootServerPowerCancelled(t *testing.T) {
 			"POST /reset/1": sequence(t, respond(http.StatusOK, "")),
 		})
 
+		// Expires during the 30s power-off wait.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 

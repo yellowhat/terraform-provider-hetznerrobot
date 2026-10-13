@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 	"time"
 )
 
@@ -65,6 +66,8 @@ func TestRunConcurrentTasks(t *testing.T) {
 				return
 			case tt.wantErrs == nil && err != nil:
 				t.Errorf("unexpected error: %v", err)
+			case err == nil:
+				t.Fatalf("want errors %v, got nil", tt.wantErrs)
 			}
 
 			for _, wantErr := range tt.wantErrs {
@@ -131,13 +134,14 @@ func TestRunConcurrentTasksAllFail(t *testing.T) {
 	}
 }
 
-// No more than maxConcurrent workers run at once.
+// Exactly maxConcurrent run at once. In synctest, fake time advances only when
+// all goroutines block, so every startable worker starts before any finishes.
 func TestRunConcurrentTasksLimit(t *testing.T) {
 	t.Parallel()
 
 	const (
 		count = 50
-		limit = 10
+		limit = 10 // mirrors maxConcurrent in helpers.go
 	)
 
 	ids := make([]string, count)
@@ -145,36 +149,45 @@ func TestRunConcurrentTasksLimit(t *testing.T) {
 		ids[i] = strconv.Itoa(i)
 	}
 
-	var running, peak atomic.Int32
+	synctest.Test(t, func(t *testing.T) {
+		var running, peak atomic.Int32
 
-	items, err := runConcurrentTasks(
-		context.Background(),
-		ids,
-		func(_ context.Context, id string) (string, error) {
-			now := running.Add(1)
-			defer running.Add(-1)
+		start := time.Now()
 
-			for {
-				old := peak.Load()
-				if now <= old || peak.CompareAndSwap(old, now) {
-					break
+		items, err := runConcurrentTasks(
+			context.Background(),
+			ids,
+			func(_ context.Context, id string) (string, error) {
+				now := running.Add(1)
+				defer running.Add(-1)
+
+				for {
+					old := peak.Load()
+					if now <= old || peak.CompareAndSwap(old, now) {
+						break
+					}
 				}
-			}
 
-			time.Sleep(time.Millisecond)
+				time.Sleep(time.Second)
 
-			return id, nil
-		},
-	)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+				return id, nil
+			},
+		)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 
-	if len(items) != count {
-		t.Errorf("items: want %d, got %d", count, len(items))
-	}
+		if len(items) != count {
+			t.Errorf("items: want %d, got %d", count, len(items))
+		}
 
-	if got := peak.Load(); got > limit {
-		t.Errorf("peak concurrency: want <= %d, got %d", limit, got)
-	}
+		if got := peak.Load(); got != limit {
+			t.Errorf("peak concurrency: want %d, got %d", limit, got)
+		}
+
+		// count/limit batches of one second each.
+		if got, want := time.Since(start), count/limit*time.Second; got != want {
+			t.Errorf("elapsed: want %v, got %v", want, got)
+		}
+	})
 }

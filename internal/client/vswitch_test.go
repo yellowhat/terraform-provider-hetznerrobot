@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/yellowhat/terraform-provider-hetznerrobot/internal/client"
@@ -147,21 +148,27 @@ func TestFetchAllVSwitchesError(t *testing.T) {
 func TestCreateVSwitch(t *testing.T) {
 	t.Parallel()
 
-	api := newTestClient(t, map[string]http.HandlerFunc{
-		"POST /vswitch": expectForm(
-			t,
-			url.Values{"name": []string{"vswitch-1"}, "vlan": []string{"4001"}},
-			http.StatusCreated,
-			vswitchJSON(1),
-		),
-	})
+	for _, status := range []int{http.StatusOK, http.StatusCreated} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			t.Parallel()
 
-	got, err := api.CreateVSwitch(context.Background(), "vswitch-1", 4001)
-	assertErr(t, err, "")
+			api := newTestClient(t, map[string]http.HandlerFunc{
+				"POST /vswitch": expectForm(
+					t,
+					url.Values{"name": []string{"vswitch-1"}, "vlan": []string{"4001"}},
+					status,
+					vswitchJSON(1),
+				),
+			})
 
-	want := testVSwitch(1)
-	if got == nil || !reflect.DeepEqual(want, *got) {
-		t.Errorf("vswitch\nwant: %+v\ngot:  %+v", want, got)
+			got, err := api.CreateVSwitch(context.Background(), "vswitch-1", 4001)
+			assertErr(t, err, "")
+
+			want := testVSwitch(1)
+			if got == nil || !reflect.DeepEqual(want, *got) {
+				t.Errorf("vswitch\nwant: %+v\ngot:  %+v", want, got)
+			}
+		})
 	}
 }
 
@@ -276,7 +283,6 @@ func TestWaitForVSwitchReady(t *testing.T) {
 	assertErr(t, err, "error fetching VSwitch while waiting")
 }
 
-// vswitchReadCalls lists the vSwitch read endpoints for allCalls.
 func vswitchReadCalls() []apiCall {
 	return []apiCall{
 		{
@@ -318,7 +324,6 @@ func vswitchReadCalls() []apiCall {
 	}
 }
 
-// vswitchWriteCalls lists the vSwitch write endpoints for allCalls.
 func vswitchWriteCalls() []apiCall {
 	return []apiCall{
 		{

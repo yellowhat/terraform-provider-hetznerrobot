@@ -128,7 +128,7 @@ func (c *HetznerRobotClient) FetchAllVSwitches(ctx context.Context) ([]VSwitch, 
 	return vswitches, nil
 }
 
-// CreateVSwitch creates a VSwitch.
+// CreateVSwitch creates a vSwitch.
 func (c *HetznerRobotClient) CreateVSwitch(
 	ctx context.Context,
 	name string,

@@ -21,7 +21,7 @@ func runConcurrentTasks[T any](
 		errs  []error
 	)
 
-	// Bounds parallel requests to stay under Robot's per-account rate limits.
+	// Caps in-flight requests; does not enforce Robot's hourly rate limits.
 	const maxConcurrent = 10
 
 	sem := make(chan struct{}, maxConcurrent)
